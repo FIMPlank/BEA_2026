@@ -8,14 +8,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
                         sans: ['Plus Jakarta Sans', 'sans-serif'],
-                        serif: ['Fraunces', 'serif'],
                     },
                     colors: {
                         ink: {
@@ -25,18 +24,15 @@
                             800: '#1c2333',
                             900: '#0b0e16',
                         },
-                        accent: {
-                            50: '#f4f3ff',
-                            100: '#e9e6fe',
-                            200: '#cfc9fc',
-                            600: '#5b4fe0',
-                            700: '#4a3fc4',
-                        },
-                        moss: {
-                            50: '#f1f8f0',
-                            100: '#e0efdd',
-                            600: '#3f7a4e',
-                            700: '#33633f',
+                        /* BEA brand blue, sampled from the official BEA wordmark and site */
+                        bea: {
+                            50: '#eaf3fb',
+                            100: '#d3e6f6',
+                            200: '#a3cdec',
+                            500: '#1878bd',
+                            600: '#136aa8',
+                            700: '#0f5588',
+                            900: '#0a3a5c',
                         }
                     }
                 }
@@ -49,13 +45,10 @@
             background-color: #fbfbfa;
         }
 
-        .font-serif { font-family: 'Fraunces', serif; }
-
-        /* Fine grain texture instead of a plain flat ground */
         .noise-ground {
             background-image:
-                radial-gradient(circle at 15% 8%, rgba(91, 79, 224, 0.08), transparent 42%),
-                radial-gradient(circle at 88% 18%, rgba(63, 122, 78, 0.07), transparent 38%),
+                radial-gradient(circle at 12% 10%, rgba(24, 120, 189, 0.10), transparent 42%),
+                radial-gradient(circle at 90% 15%, rgba(10, 58, 92, 0.06), transparent 40%),
                 linear-gradient(180deg, #fcfcfb 0%, #fbfbfa 100%);
         }
 
@@ -67,6 +60,11 @@
             mask-image: radial-gradient(ellipse 60% 55% at 50% 0%, black 40%, transparent 100%);
         }
 
+        /* Diagonal cut motif, echoing the angled banner used on BEA's own site */
+        .diagonal-slice {
+            clip-path: polygon(0 100%, 100% 0, 100% 42%, 0 100%);
+        }
+
         .card {
             transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s ease;
         }
@@ -74,7 +72,7 @@
         .card.is-live:hover {
             transform: translateY(-5px);
             box-shadow: 0 28px 60px -20px rgba(11, 14, 22, 0.22);
-            border-color: rgba(91, 79, 224, 0.28);
+            border-color: rgba(24, 120, 189, 0.35);
         }
 
         .card.is-pending:hover {
@@ -103,7 +101,7 @@
         }
 
         ::selection {
-            background: rgba(91, 79, 224, 0.18);
+            background: rgba(24, 120, 189, 0.18);
             color: #0b0e16;
         }
     </style>
@@ -114,11 +112,9 @@
     <header class="border-b border-ink-900/[0.06] bg-[#fbfbfa]/85 backdrop-blur-md sticky top-0 z-50">
         <div class="max-w-5xl mx-auto px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-8 h-8 rounded-lg bg-ink-900 text-white flex items-center justify-center font-serif font-semibold text-[13px]">
-                        26
-                    </div>
-                    <span class="font-bold tracking-tight text-ink-900 text-[15px]">BEA 2026</span>
+                <div class="flex items-baseline gap-2">
+                    <span class="font-extrabold tracking-tight text-bea-600 text-xl leading-none">BEA</span>
+                    <span class="font-medium text-ink-400 text-sm leading-none">2026</span>
                 </div>
                 <span class="text-[11px] font-semibold text-ink-400 uppercase tracking-[0.14em] hidden sm:block">
                     Wirkungsorientierte Anwendung von KI
@@ -131,12 +127,15 @@
     <main>
         <section class="relative overflow-hidden noise-ground">
             <div class="absolute inset-0 hairline-grid pointer-events-none"></div>
+            <!-- Angled brand-blue accent, echoing the diagonal banner on the official BEA site -->
+            <div class="diagonal-slice absolute top-0 right-0 w-1/2 sm:w-2/5 h-40 sm:h-48 bg-gradient-to-br from-bea-600 to-bea-900 opacity-[0.94] pointer-events-none"></div>
+
             <div class="relative max-w-5xl mx-auto px-6 lg:px-8 pt-20 pb-16 sm:pt-28 sm:pb-20 text-center">
-                <span class="fade-up inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.12em] bg-white text-accent-700 border border-accent-200/70 shadow-sm">
-                    <span class="w-1.5 h-1.5 rounded-full bg-accent-600"></span>
+                <span class="fade-up inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.12em] bg-white text-bea-700 border border-bea-200/70 shadow-sm">
+                    <span class="w-1.5 h-1.5 rounded-full bg-bea-600"></span>
                     Seminartag &middot; Jahrgang 2026
                 </span>
-                <h1 class="fade-up stagger-1 mt-7 font-serif font-medium tracking-tight text-ink-900 text-[2.6rem] leading-[1.08] sm:text-6xl sm:leading-[1.05]">
+                <h1 class="fade-up stagger-1 mt-7 font-extrabold tracking-tight text-ink-900 text-[2.4rem] leading-[1.1] sm:text-[3.2rem] sm:leading-[1.08]">
                     Wirkungsorientierte<br class="hidden sm:block">
                     Anwendung von KI
                 </h1>
@@ -146,7 +145,7 @@
                 </p>
                 <div class="fade-up stagger-3 mt-9 flex items-center justify-center gap-8 text-xs text-ink-400 font-semibold">
                     <span class="flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-moss-600"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                         1 Projekt live
                     </span>
                     <span class="w-px h-3.5 bg-ink-900/10"></span>
@@ -161,9 +160,9 @@
 
                 <!-- Project 1: LIVE -->
                 <a href="kuechen-manager-pro/" class="card is-live fade-up stagger-1 group relative flex flex-col bg-white rounded-[28px] border border-ink-900/[0.07] p-6 shadow-[0_1px_2px_rgba(11,14,22,0.04),0_12px_28px_-16px_rgba(11,14,22,0.12)] overflow-hidden">
-                    <div class="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-moss-600 via-accent-600 to-accent-700"></div>
+                    <div class="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-bea-500 to-bea-700"></div>
                     <div class="flex items-start justify-between">
-                        <div class="w-11 h-11 rounded-2xl bg-moss-50 text-moss-700 border border-moss-100 flex items-center justify-center shrink-0">
+                        <div class="w-11 h-11 rounded-2xl bg-bea-50 text-bea-700 border border-bea-100 flex items-center justify-center shrink-0">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
                                 <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"></path>
                                 <line x1="6" y1="17" x2="18" y2="17"></line>
@@ -171,15 +170,15 @@
                         </div>
                         <span class="index-num text-[11px] font-bold text-ink-900/15 mt-1">01</span>
                     </div>
-                    <span class="inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-moss-100 text-moss-700 mt-4">
-                        <span class="w-1.5 h-1.5 rounded-full bg-moss-600 animate-pulse"></span> Live
+                    <span class="inline-flex w-fit items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-700 mt-4">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span> Live
                     </span>
                     <h3 class="font-bold text-ink-900 text-[15px] leading-snug mt-2.5">SmartPrep Westerham</h3>
                     <p class="text-[13px] text-ink-400 mt-1.5 leading-relaxed flex-grow">
                         KI-K&uuml;chen-Manager Pro &mdash; analysiert Laufpl&auml;ne, erkennt Personal- und
                         Bestandsengp&auml;sse und generiert Zero-Waste Rezeptvorschl&auml;ge.
                     </p>
-                    <span class="mt-5 pt-4 border-t border-ink-900/[0.06] inline-flex items-center gap-1.5 text-[13px] font-bold text-accent-700 group-hover:gap-2.5 transition-all">
+                    <span class="mt-5 pt-4 border-t border-ink-900/[0.06] inline-flex items-center gap-1.5 text-[13px] font-bold text-bea-700 group-hover:gap-2.5 transition-all">
                         Projekt &ouml;ffnen
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                     </span>
@@ -263,13 +262,14 @@
     <!-- FOOTER -->
     <footer class="border-t border-ink-900/[0.06]">
         <div class="max-w-5xl mx-auto px-6 lg:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p class="text-xs text-ink-400 text-center sm:text-left">
-                BEA 2026 &middot; Seminartag &bdquo;Wirkungsorientierte Anwendung von KI&ldquo;
-            </p>
+            <div class="flex items-center gap-2 text-ink-400">
+                <span class="font-extrabold text-bea-600 text-xs tracking-tight">BEA</span>
+                <span class="text-xs">&middot; Seminartag &bdquo;Wirkungsorientierte Anwendung von KI&ldquo;</span>
+            </div>
             <a href="https://www.fim-rc.de/" target="_blank" rel="noopener noreferrer"
-               class="group inline-flex items-center gap-1.5 text-xs font-bold text-ink-600 hover:text-accent-700 transition-colors">
+               class="group inline-flex items-center gap-1.5 text-xs font-bold text-ink-600 hover:text-bea-700 transition-colors">
                 FIM Forschungsinstitut f&uuml;r Informationsmanagement
-                <svg class="w-3.5 h-3.5 text-ink-400 group-hover:text-accent-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                <svg class="w-3.5 h-3.5 text-ink-400 group-hover:text-bea-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
             </a>
         </div>
     </footer>
