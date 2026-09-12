@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="de" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BEA 2026 &middot; Projekt&uuml;bersicht</title>
+    <meta name="description" content="Übersicht der KI-Praxisprojekte des BEA 2026 Jahrgangs.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        ink: {
+                            900: '#0f172a',
+                            800: '#1e293b',
+                        },
+                        accent: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .grid-pattern {
+            background-image:
+                linear-gradient(rgba(15, 23, 42, 0.045) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(15, 23, 42, 0.045) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+
+        .card {
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease;
+        }
+
+        .card.is-live:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px -12px rgba(15, 23, 42, 0.18);
+            border-color: rgba(99, 102, 241, 0.35);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="h-full text-slate-800 antialiased grid-pattern">
+
+    <!-- HEADER -->
+    <header class="border-b border-slate-200/80 bg-white/70 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-ink-900 text-white flex items-center justify-center font-extrabold text-xs">
+                        26
+                    </div>
+                    <span class="font-bold tracking-tight text-slate-900">BEA 2026</span>
+                </div>
+                <span class="text-xs font-semibold text-slate-500 hidden sm:block">KI-Praxisprojekte</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section class="py-16 sm:py-20 text-center max-w-2xl mx-auto fade-in">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-accent-50 text-accent-700 border border-accent-100">
+                Jahrgang 2026
+            </span>
+            <h1 class="mt-5 text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900">
+                Praxisprojekte im &Uuml;berblick
+            </h1>
+            <p class="mt-4 text-slate-600 text-sm sm:text-base leading-relaxed">
+                Eine Sammlung eigenst&auml;ndiger KI-Tools, die im Rahmen von BEA 2026 entstehen &mdash;
+                jedes als eigenst&auml;ndige Anwendung, hier gesammelt an einem Ort.
+            </p>
+        </section>
+
+        <!-- PROJECT GRID -->
+        <section class="pb-20">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" id="project-grid">
+
+                <!-- Project 1: LIVE -->
+                <a href="kuechen-manager-pro/" class="card is-live group relative flex flex-col bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm overflow-hidden fade-in">
+                    <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-accent-600"></div>
+                    <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center mb-4 shrink-0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+                            <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"></path>
+                            <line x1="6" y1="17" x2="18" y2="17"></line>
+                        </svg>
+                    </div>
+                    <span class="inline-flex w-fit items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 mb-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Live
+                    </span>
+                    <h3 class="font-extrabold text-slate-900 text-base leading-snug">SmartPrep Westerham</h3>
+                    <p class="text-xs text-slate-500 mt-1.5 leading-relaxed flex-grow">
+                        KI-K&uuml;chen-Manager Pro &mdash; analysiert Laufpl&auml;ne, erkennt Personal- und
+                        Bestandsengp&auml;sse und generiert Zero-Waste Rezeptvorschl&auml;ge.
+                    </p>
+                    <span class="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-accent-700 group-hover:gap-2.5 transition-all">
+                        Projekt &ouml;ffnen
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </span>
+                </a>
+
+                <!-- Projects 2-6: PLACEHOLDER -->
+                <div class="card relative flex flex-col bg-white/60 rounded-3xl border border-dashed border-slate-300 p-6 fade-in">
+                    <div class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center mb-4 shrink-0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M12 6v6l4 2"></path><circle cx="12" cy="12" r="9"></circle></svg>
+                    </div>
+                    <span class="inline-flex w-fit items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-500 border border-slate-200 mb-2">
+                        In Vorbereitung
+                    </span>
+                    <h3 class="font-extrabold text-slate-500 text-base leading-snug">Projekt 2</h3>
+                    <p class="text-xs text-slate-400 mt-1.5 leading-relaxed flex-grow">Wird in K&uuml;rze erg&auml;nzt.</p>
+                </div>
+
+                <div class="card relative flex flex-col bg-white/60 rounded-3xl border border-dashed border-slate-300 p-6 fade-in">
+                    <div class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center mb-4 shrink-0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M12 6v6l4 2"></path><circle cx="12" cy="12" r="9"></circle></svg>
+                    </div>
+                    <span class="inline-flex w-fit items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-500 border border-slate-200 mb-2">
+                        In Vorbereitung
+                    </span>
+                    <h3 class="font-extrabold text-slate-500 text-base leading-snug">Projekt 3</h3>
+                    <p class="text-xs text-slate-400 mt-1.5 leading-relaxed flex-grow">Wird in K&uuml;rze erg&auml;nzt.</p>
+                </div>
+
+                <div class="card relative flex flex-col bg-white/60 rounded-3xl border border-dashed border-slate-300 p-6 fade-in">
+                    <div class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center mb-4 shrink-0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M12 6v6l4 2"></path><circle cx="12" cy="12" r="9"></circle></svg>
+                    </div>
+                    <span class="inline-flex w-fit items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-500 border border-slate-200 mb-2">
+                        In Vorbereitung
+                    </span>
+                    <h3 class="font-extrabold text-slate-500 text-base leading-snug">Projekt 4</h3>
+                    <p class="text-xs text-slate-400 mt-1.5 leading-relaxed flex-grow">Wird in K&uuml;rze erg&auml;nzt.</p>
+                </div>
+
+                <div class="card relative flex flex-col bg-white/60 rounded-3xl border border-dashed border-slate-300 p-6 fade-in">
+                    <div class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center mb-4 shrink-0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M12 6v6l4 2"></path><circle cx="12" cy="12" r="9"></circle></svg>
+                    </div>
+                    <span class="inline-flex w-fit items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-500 border border-slate-200 mb-2">
+                        In Vorbereitung
+                    </span>
+                    <h3 class="font-extrabold text-slate-500 text-base leading-snug">Projekt 5</h3>
+                    <p class="text-xs text-slate-400 mt-1.5 leading-relaxed flex-grow">Wird in K&uuml;rze erg&auml;nzt.</p>
+                </div>
+
+                <div class="card relative flex flex-col bg-white/60 rounded-3xl border border-dashed border-slate-300 p-6 fade-in">
+                    <div class="w-11 h-11 rounded-2xl bg-slate-100 text-slate-400 border border-slate-200 flex items-center justify-center mb-4 shrink-0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M12 6v6l4 2"></path><circle cx="12" cy="12" r="9"></circle></svg>
+                    </div>
+                    <span class="inline-flex w-fit items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-500 border border-slate-200 mb-2">
+                        In Vorbereitung
+                    </span>
+                    <h3 class="font-extrabold text-slate-500 text-base leading-snug">Projekt 6</h3>
+                    <p class="text-xs text-slate-400 mt-1.5 leading-relaxed flex-grow">Wird in K&uuml;rze erg&auml;nzt.</p>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <footer class="border-t border-slate-200/80 py-8">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-xs text-slate-400 text-center">
+            BEA 2026 &middot; Sammlung studentischer KI-Praxisprojekte
+        </div>
+    </footer>
+
+</body>
+</html>

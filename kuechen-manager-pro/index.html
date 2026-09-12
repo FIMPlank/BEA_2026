@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="de" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartPrep Westerham - KI Küchen-Manager Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        ihkblue: {
+                            50: '#f0f6fe',
+                            100: '#e0edfd',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            700: '#1e40af',
+                            800: '#1e3a8a',
+                            900: '#172554',
+                        },
+                        herb: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Subtle Herb Pattern & Border Accents */
+        .herb-bg-pattern {
+            background-image: radial-gradient(rgba(34, 197, 94, 0.08) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .upload-area.dragover {
+            background-color: #f0fdf4;
+            border-color: #16a34a;
+        }
+        
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            border-top: 3px solid #ffffff;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Intro Splash Screen & Floating Hat Animation */
+        #splash-overlay {
+            transition: opacity 0.6s ease-out, visibility 0.6s ease-out;
+        }
+
+        .hat-hero {
+            transition: all 1.1s cubic-bezier(0.65, 0, 0.35, 1);
+        }
+
+        .hat-moved {
+            transform: translate(var(--target-x), var(--target-y)) scale(0.38) !important;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Floating Herb Decor Effect */
+        .leaf-float {
+            animation: floatLeaf 6s ease-in-out infinite alternate;
+        }
+
+        @keyframes floatLeaf {
+            0% { transform: translateY(0px) rotate(0deg); }
+            100% { transform: translateY(-8px) rotate(5deg); }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col herb-bg-pattern relative selection:bg-herb-100 selection:text-herb-700">
+
+    <!-- INTRO ANIMATION OVERLAY -->
+    <div id="splash-overlay" class="fixed inset-0 z-[100] bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center p-4">
+        <!-- Floating Herb Background Elements in Splash -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
+            <svg class="absolute -top-12 -left-12 w-64 h-64 text-herb-500 leaf-float" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17,8C8,10,5,16,3,21C8,20,14,17,16,12C18,7,21,5,22,3C19,3,18,5,17,8Z"/>
+            </svg>
+            <svg class="absolute bottom-10 right-10 w-80 h-80 text-herb-500 leaf-float" style="animation-delay: -2s;" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17,8C8,10,5,16,3,21C8,20,14,17,16,12C18,7,21,5,22,3C19,3,18,5,17,8Z"/>
+            </svg>
+        </div>
+
+        <div id="hero-hat-container" class="hat-hero flex flex-col items-center text-center z-10 transform scale-100">
+            <div id="anim-hat-icon" class="w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-tr from-herb-600 to-emerald-400 text-white rounded-3xl p-5 shadow-2xl shadow-herb-500/30 flex items-center justify-center border border-white/20">
+                <!-- Chef Hat SVG Icon -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full">
+                    <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"></path>
+                    <line x1="6" y1="17" x2="18" y2="17"></line>
+                </svg>
+            </div>
+            <h1 id="splash-title" class="mt-5 text-2xl sm:text-3xl font-extrabold text-white tracking-tight">SmartPrep <span class="font-light text-herb-400">Westerham</span></h1>
+            <p id="splash-sub" class="text-xs text-slate-400 font-medium tracking-wide mt-1 uppercase">Frisches KI-Küchenmanagement</p>
+        </div>
+    </div>
+
+    <!-- HEADER NAVBAR -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                
+                <!-- Logo & Brand (Docking target for animated Hat) -->
+                <div class="flex items-center gap-3 cursor-pointer group" onclick="goToStep('upload')">
+                    <div id="header-logo-target" class="w-10 h-10 bg-gradient-to-tr from-herb-600 to-emerald-400 text-white rounded-xl p-2 shadow-md shadow-herb-600/20 flex items-center justify-center transition-transform group-hover:scale-105">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full">
+                            <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"></path>
+                            <line x1="6" y1="17" x2="18" y2="17"></line>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-lg font-bold tracking-tight text-slate-900 leading-none">SmartPrep</h1>
+                            <span class="bg-herb-100 text-herb-700 text-[10px] font-extrabold px-2 py-0.5 rounded-md border border-herb-200">FRESH</span>
+                        </div>
+                        <span class="text-xs text-slate-500 font-medium">IHK Akademie Westerham</span>
+                    </div>
+                </div>
+
+                <!-- Workflow Navigation Stepper -->
+                <div class="hidden md:flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl text-xs font-semibold border border-slate-200">
+                    <button id="step-btn-1" onclick="goToStep('upload')" class="px-3 py-1.5 rounded-lg transition-all bg-white text-slate-900 shadow-sm border border-slate-200/60">
+                        1. PDF Upload
+                    </button>
+                    <span class="text-slate-300 px-1">→</span>
+                    <button id="step-btn-2" onclick="goToStep('dashboard')" class="px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900">
+                        2. Planungs-Übersicht KW 42
+                    </button>
+                </div>
+
+                <!-- User Profile -->
+                <div class="flex items-center gap-3">
+                    <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs font-semibold text-slate-700">
+                        <span class="w-2 h-2 rounded-full bg-herb-500 animate-pulse"></span>
+                        Stefan (Küchenchef)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER WITH DECORATIVE HERB ACCENTS -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full relative">
+
+        <!-- Subtle Top & Corner Herb Frame Accents -->
+        <div class="absolute -top-4 left-2 pointer-events-none opacity-25 hidden xl:block">
+            <svg class="w-28 h-28 text-herb-600 leaf-float" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17,8C8,10,5,16,3,21C8,20,14,17,16,12C18,7,21,5,22,3C19,3,18,5,17,8Z"/>
+            </svg>
+        </div>
+        <div class="absolute top-1/2 right-2 pointer-events-none opacity-20 hidden xl:block">
+            <svg class="w-32 h-32 text-herb-600 leaf-float" style="animation-delay: -3s;" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17,8C8,10,5,16,3,21C8,20,14,17,16,12C18,7,21,5,22,3C19,3,18,5,17,8Z"/>
+            </svg>
+        </div>
+
+        <!-- VIEW 1: UPLOAD DASHBOARD -->
+        <div id="upload-view" class="fade-in max-w-3xl mx-auto space-y-6">
+            
+            <div class="text-center space-y-2">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-herb-50 text-herb-700 border border-herb-200 shadow-sm">
+                    <svg class="w-3.5 h-3.5 text-herb-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L15 8L21 9L17 14L18 20L12 17L6 20L7 14L3 9L9 8L12 2Z"/></svg>
+                    Frische-Fokus • IHK Akademie Westerham
+                </span>
+                <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight sm:text-4xl">Laufplan hochladen & KI-Analyse starten</h2>
+                <p class="text-slate-600 max-w-xl mx-auto text-sm leading-relaxed">
+                    Lade den 70-seitigen Wochenlaufplan hoch. Die KI extrahiert automatisch Krankheitsfälle, Sonder-BBQs, Gästeabweichungen und erstellt passende Rezept- & Bestelllisten.
+                </p>
+            </div>
+
+            <!-- Minimalist Upload Card with Herb-green accents -->
+            <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/60 border border-slate-200/80 p-6 md:p-8 relative overflow-hidden">
+                <!-- Top Card Decorative Fresh Border -->
+                <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-herb-500 via-emerald-400 to-ihkblue-600"></div>
+
+                <div id="drop-zone" class="upload-area border-2 border-dashed border-slate-300 rounded-2xl p-8 md:p-10 text-center cursor-pointer transition-all duration-300 hover:border-herb-500 hover:bg-herb-50/40 bg-slate-50/50 group">
+                    <div class="w-16 h-16 bg-white text-herb-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200 shadow-sm group-hover:scale-110 group-hover:border-herb-300 transition-all">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                    </div>
+                    <p class="text-base font-bold text-slate-800 mb-1">70-seitigen Laufplan (PDF) hier ablegen</p>
+                    <p class="text-xs text-slate-500 mb-5">PDF-Dokument der Akademie • Bis zu 50 MB</p>
+                    <button type="button" class="bg-white border border-slate-300 text-slate-700 px-5 py-2.5 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-100 transition-colors">
+                        Datei lokal auswählen
+                    </button>
+                    <input type="file" id="file-input" class="hidden" accept=".pdf">
+                </div>
+
+                <!-- Pre-selected PDF file card simulation -->
+                <div id="file-card" class="mt-6 bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-11 h-11 bg-red-500/10 text-red-600 rounded-xl flex items-center justify-center font-extrabold text-xs shrink-0 border border-red-200">
+                            PDF
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-800">Laufplan_KW42_IHK_Westerham.pdf</p>
+                            <p class="text-xs text-slate-500">70 Seiten • Voreingestellt & Bereit zur KI-Analyse</p>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Bereit
+                    </span>
+                </div>
+
+                <!-- PROMINENT GREEN CONTINUATION BUTTON -->
+                <div class="mt-8 pt-6 border-t border-slate-100 flex flex-col items-center">
+                    <button id="green-continue-btn" onclick="startAnalysis()" class="w-full sm:w-auto min-w-[300px] bg-herb-600 hover:bg-herb-500 text-white font-extrabold py-4 px-8 rounded-2xl shadow-lg shadow-herb-600/30 hover:shadow-herb-600/40 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-3 text-base">
+                        <span>Weiter zur Analyse</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                        </svg>
+                    </button>
+                    <p class="text-xs text-slate-500 mt-2.5 text-center">Analysiert automatisch alle 70 Seiten und öffnet die Planungs-Übersicht KW 42.</p>
+                </div>
+            </div>
+
+            <!-- Features Summary Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div class="w-8 h-8 rounded-xl bg-herb-50 text-herb-700 flex items-center justify-center mb-2.5 font-bold text-xs border border-herb-200">1</div>
+                    <h4 class="font-bold text-sm text-slate-900">Dienstplan-Abgleich</h4>
+                    <p class="text-xs text-slate-500 mt-1">Erkennt Unterbesetzungen & Krankheitsfälle automatisch im Laufplan.</p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div class="w-8 h-8 rounded-lg bg-herb-50 text-herb-700 flex items-center justify-center mb-2.5 font-bold text-xs border border-herb-200">2</div>
+                    <h4 class="font-bold text-sm text-slate-900">Exakte Bestellungen</h4>
+                    <p class="text-xs text-slate-500 mt-1">Berechnet Bedarfsmengen für Events wie BBQs & Seminare präzise voraus.</p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div class="w-8 h-8 rounded-lg bg-herb-50 text-herb-700 flex items-center justify-center mb-2.5 font-bold text-xs border border-herb-200">3</div>
+                    <h4 class="font-bold text-sm text-slate-900">Zero Waste Rezepte</h4>
+                    <p class="text-xs text-slate-500 mt-1">Generiert frische Rezeptvorschläge zur gezielten Abfallreduzierung.</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- VIEW 2: LOADING PROGRESS -->
+        <div id="loading-view" class="hidden flex-col items-center justify-center py-16 fade-in">
+            <div class="bg-slate-900 rounded-3xl p-8 sm:p-10 shadow-2xl text-center max-w-md w-full border border-slate-800 relative overflow-hidden">
+                <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-herb-500 to-ihkblue-500"></div>
+                <div class="spinner mx-auto mb-6"></div>
+                <h3 class="text-xl font-bold text-white mb-1">Analysiere 70 Seiten Laufplan...</h3>
+                <p class="text-slate-400 text-xs mb-6" id="loading-text">Lese Dokument ein...</p>
+                
+                <div class="w-full bg-slate-800 rounded-full h-3 p-0.5 border border-slate-700 overflow-hidden">
+                    <div id="progress-bar" class="bg-gradient-to-r from-herb-500 to-emerald-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <p id="progress-percent" class="text-right text-xs font-mono text-herb-400 mt-2 font-bold">0%</p>
+            </div>
+        </div>
+
+        <!-- VIEW 3: PLANUNGS-ÜBERSICHT KW 42 -->
+        <div id="dashboard-view" class="hidden fade-in space-y-6">
+            
+            <!-- Top Dashboard Bar -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl shadow-sm border border-slate-200/80">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="bg-herb-100 text-herb-800 text-xs font-bold px-3 py-0.5 rounded-full border border-herb-200">
+                            Analyse vollendet
+                        </span>
+                        <span class="text-xs text-slate-500">Quelle: Laufplan_KW42_IHK_Westerham.pdf</span>
+                    </div>
+                    <h2 class="text-2xl font-extrabold text-slate-900 mt-1">Planungs-Übersicht: KW 42</h2>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="goToStep('upload')" class="text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        Neuen Laufplan laden
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dienstplan-Analyse & KI-Warnungen -->
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-6 md:p-8 relative overflow-hidden">
+                <div class="absolute top-0 left-0 bottom-0 w-1.5 bg-purple-600"></div>
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-lg font-bold flex items-center gap-2 text-slate-900">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        Dienstplan-Analyse & KI-Besonderheiten
+                    </h3>
+                    <span class="text-xs bg-purple-50 text-purple-700 font-bold px-2.5 py-1 rounded-lg border border-purple-100">3 Meldungen erkannt</span>
+                </div>
+                <p class="text-xs text-slate-500 mb-5">Automatischer Abgleich zwischen Gästefrequenz aus dem Laufplan und dem Personaleinsatz.</p>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <!-- Alert 1 -->
+                    <div class="bg-red-50/70 border-l-4 border-red-500 p-4 rounded-r-2xl border border-slate-100">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-red-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-red-800">Engpass: Mittwoch Früh</h4>
+                                <p class="text-sm font-extrabold text-slate-800 mt-0.5">Management Seminar (150 Pax)</p>
+                                <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                                    150 Gäste + 10% Vegan gemeldet, aber nur <strong>2 Köche in der Frühschicht</strong>. Krankheitsfall (Azubi Thomas) verschärft die Lage.
+                                </p>
+                                <button class="mt-3 text-xs bg-red-100 hover:bg-red-200 text-red-800 font-bold py-1.5 px-3 rounded-lg border border-red-200 transition-colors">
+                                    Aushilfe benachrichtigen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alert 2 -->
+                    <div class="bg-amber-50/70 border-l-4 border-amber-500 p-4 rounded-r-2xl border border-slate-100">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-amber-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-amber-800">Überkapazität: Dienstag</h4>
+                                <p class="text-sm font-extrabold text-slate-800 mt-0.5">Nachmittags-Schicht</p>
+                                <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                                    Nur 40 Gäste im Haus bei voller Schichtbesetzung. Empfehlung: Zeit für Mise en Place für das BBQ am Freitag nutzen.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alert 3 -->
+                    <div class="bg-emerald-50/70 border-l-4 border-emerald-500 p-4 rounded-r-2xl border border-slate-100">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-emerald-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-800">Schichttausch bestätigt</h4>
+                                <p class="text-sm font-extrabold text-slate-800 mt-0.5">Maria (Di → Mi)</p>
+                                <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                                    Maria unterstützt die Mi-Frühschicht. Der personelle Engpass ist damit größtenteils entspannt.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Two Column Grid for Events & Orders -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Besonderheiten / Events -->
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-6 md:p-8 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 right-0 h-1 bg-ihkblue-600"></div>
+                    <h3 class="text-lg font-bold flex items-center gap-2 mb-4 text-slate-900">
+                        <svg class="w-5 h-5 text-ihkblue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Veranstaltungen & Laufplan-Events
+                    </h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start gap-3 p-3.5 bg-red-50/50 text-red-900 rounded-2xl border border-red-100">
+                            <span class="p-2 bg-red-100 text-red-600 rounded-xl shrink-0 mt-0.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            </span>
+                            <div>
+                                <span class="font-bold text-sm block">Krankheitsfall: Azubi Thomas</span>
+                                <span class="text-xs text-slate-600">Fehlt Do & Fr. Beilagenstation muss neu zugewiesen werden.</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3 p-3.5 bg-blue-50/50 text-ihkblue-900 rounded-2xl border border-blue-100">
+                            <span class="p-2 bg-blue-100 text-ihkblue-600 rounded-xl shrink-0 mt-0.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            </span>
+                            <div>
+                                <span class="font-bold text-sm block">Großveranstaltung: Management Seminar</span>
+                                <span class="text-xs text-slate-600">Mittwoch: 150 Personen (davon 10% Vegan angefragt).</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3 p-3.5 bg-amber-50/50 text-amber-900 rounded-2xl border border-amber-100">
+                            <span class="p-2 bg-amber-100 text-amber-600 rounded-xl shrink-0 mt-0.5">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path></svg>
+                            </span>
+                            <div>
+                                <span class="font-bold text-sm block">Sommer-Barbecue Terrasse</span>
+                                <span class="text-xs text-slate-600">Freitag Abend: Ca. 120 Personen im Außenbereich.</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Bestellungen -->
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-6 md:p-8 relative overflow-hidden flex flex-col justify-between">
+                    <div class="absolute top-0 left-0 right-0 h-1 bg-herb-600"></div>
+                    <div>
+                        <h3 class="text-lg font-bold flex items-center gap-2 mb-1 text-slate-900">
+                            <svg class="w-5 h-5 text-herb-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            Berechnete Bestell-Empfehlungen
+                        </h3>
+                        <p class="text-xs text-slate-500 mb-4">Automatisch skaliert basierend auf 150 Pax (Mi) & 120 Pax BBQ (Fr).</p>
+                        
+                        <div class="space-y-3">
+                            <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">Fleischerei Huber</h4>
+                                <ul class="space-y-1.5 text-xs text-slate-700">
+                                    <li class="flex items-center gap-2"><input type="checkbox" checked class="rounded text-herb-600 focus:ring-herb-500"> 25 kg Schweinenacken (BBQ)</li>
+                                    <li class="flex items-center gap-2"><input type="checkbox" checked class="rounded text-herb-600 focus:ring-herb-500"> 15 kg Rinderbrust (BBQ)</li>
+                                    <li class="flex items-center gap-2"><input type="checkbox" checked class="rounded text-herb-600 focus:ring-herb-500"> 80 Stk. Bratwürste</li>
+                                </ul>
+                            </div>
+                            <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
+                                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">Frischeparadies (Gemüse & Kräuter)</h4>
+                                <ul class="space-y-1.5 text-xs text-slate-700">
+                                    <li class="flex items-center gap-2"><input type="checkbox" checked class="rounded text-herb-600 focus:ring-herb-500"> 15 kg Paprika bunt (Seminar + BBQ)</li>
+                                    <li class="flex items-center gap-2"><input type="checkbox" checked class="rounded text-herb-600 focus:ring-herb-500"> 10 kg Zucchini & Frische Kräuter (Basilikum/Thymian)</li>
+                                    <li class="flex items-center gap-2"><input type="checkbox" checked class="rounded text-herb-600 focus:ring-herb-500"> 5 kg Grillkäse (Veganer Anteil Mittwoch)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="w-full mt-4 bg-white border-2 border-herb-600 text-herb-700 font-bold py-2.5 rounded-xl hover:bg-herb-50 transition-colors text-xs flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Bestellliste als PDF exportieren
+                    </button>
+                </div>
+            </div>
+
+            <!-- Rezepte & Waste Reduktion -->
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-6 md:p-8 relative overflow-hidden">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-slate-100 pb-5">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-lg font-bold flex items-center gap-2 text-slate-900">
+                                <svg class="w-5 h-5 text-herb-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                                Generierte Rezept-Inspirationen & Wochenmenü
+                            </h3>
+                            <span class="bg-emerald-100 text-emerald-800 text-[11px] font-extrabold px-2.5 py-0.5 rounded-md border border-emerald-200">
+                                🌱 Täglich 1x Vegan
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">Abgestimmt auf die Speisen-Datenbank & automatischen Zero Waste Wochenplan.</p>
+                    </div>
+                    <span class="inline-flex items-center gap-1.5 text-xs bg-emerald-50 text-emerald-800 font-extrabold px-3 py-1.5 rounded-xl border border-emerald-200 shrink-0">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        ~18% Food-Waste Reduktion
+                    </span>
+                </div>
+
+                <!-- TÄGLICHER VEGANER SPEISEPLAN (MO-FR) INKL. ZERO-WASTE FREITAG -->
+                <div class="mb-8 bg-slate-50 border border-slate-200/80 rounded-2xl p-4 md:p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                            <span>🌱 Wochen-Standard: Tägliches Veganes Hauptgericht (Mo–Fr)</span>
+                        </h4>
+                        <span class="text-[11px] font-semibold text-slate-500">100% Pflanzliche Alternativen</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+                        <!-- Monday -->
+                        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase">Montag</span>
+                                <h5 class="text-xs font-bold text-slate-800 mt-0.5">Kichererbsen-Süßkartoffel-Curry</h5>
+                            </div>
+                            <span class="mt-2 text-[10px] bg-herb-50 text-herb-700 font-bold px-2 py-0.5 rounded border border-herb-200 self-start">🌱 Vegan</span>
+                        </div>
+                        <!-- Tuesday -->
+                        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase">Dienstag</span>
+                                <h5 class="text-xs font-bold text-slate-800 mt-0.5">Mediterranes Ofengemüse mit Couscous</h5>
+                            </div>
+                            <span class="mt-2 text-[10px] bg-herb-50 text-herb-700 font-bold px-2 py-0.5 rounded border border-herb-200 self-start">🌱 Vegan</span>
+                        </div>
+                        <!-- Wednesday -->
+                        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase">Mittwoch</span>
+                                <h5 class="text-xs font-bold text-slate-800 mt-0.5">Tofu-Kräuterpfanne mit Jasminreis</h5>
+                            </div>
+                            <span class="mt-2 text-[10px] bg-herb-50 text-herb-700 font-bold px-2 py-0.5 rounded border border-herb-200 self-start">🌱 Vegan (150 Pax)</span>
+                        </div>
+                        <!-- Thursday -->
+                        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase">Donnerstag</span>
+                                <h5 class="text-xs font-bold text-slate-800 mt-0.5">Linsen-Bolognese mit Vollkornpenne</h5>
+                            </div>
+                            <span class="mt-2 text-[10px] bg-herb-50 text-herb-700 font-bold px-2 py-0.5 rounded border border-herb-200 self-start">🌱 Vegan</span>
+                        </div>
+                        <!-- Friday SPECIAL NO-WASTE -->
+                        <div class="bg-gradient-to-br from-emerald-50 to-herb-100 p-3 rounded-xl border-2 border-emerald-400 shadow-sm flex flex-col justify-between relative overflow-hidden">
+                            <div class="absolute -right-2 -top-2 bg-emerald-600 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-bl-lg uppercase tracking-wider">
+                                Special
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wide">Freitag • No Waste</span>
+                                <h5 class="text-xs font-extrabold text-slate-900 mt-0.5">Zero-Waste Reste-Gartengemüse-Stir Fry</h5>
+                            </div>
+                            <span class="mt-2 text-[10px] bg-emerald-700 text-white font-extrabold px-2 py-0.5 rounded shadow-sm self-start flex items-center gap-1">
+                                ♻️ Zero Waste & 🌱 Vegan
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3 REZEPT-KARTEN MIT FOTOS -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+                    <!-- Recipe 1 Photo -->
+                    <div class="border border-slate-200/80 rounded-2xl p-4 hover:shadow-lg transition-all cursor-pointer bg-white group flex flex-col justify-between">
+                        <div>
+                            <div class="h-40 bg-slate-100 rounded-xl mb-3 overflow-hidden relative">
+                                <img src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80" 
+                                     onerror="this.onerror=null; this.src='https://placehold.co/600x400/e2e8f0/16a34a?text=BBQ+Pulled+Pork';" 
+                                     alt="Slow Cooked Pulled Pork" 
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <span class="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md">
+                                    BBQ Event
+                                </span>
+                            </div>
+                            <span class="text-[10px] font-bold text-ihkblue-600 uppercase tracking-wider bg-ihkblue-50 px-2 py-0.5 rounded-md">Freitag (Abend)</span>
+                            <h4 class="font-extrabold text-slate-900 text-sm mt-1">Slow Cooked BBQ Pulled Pork</h4>
+                            <p class="text-xs text-slate-500 mt-1 leading-relaxed">Nutzt die bestellte Rinderbrust/Nacken optimal. Maximale Ausbeute, minimale Vorbereitungszeit im laufenden Betrieb.</p>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+                            <span>Portionen: 120 Pax</span>
+                            <span class="font-bold text-herb-700">Fleisch-Klassiker</span>
+                        </div>
+                    </div>
+
+                    <!-- Recipe 2 Photo -->
+                    <div class="border border-slate-200/80 rounded-2xl p-4 hover:shadow-lg transition-all cursor-pointer bg-white group flex flex-col justify-between">
+                        <div>
+                            <div class="h-40 bg-slate-100 rounded-xl mb-3 overflow-hidden relative">
+                                <img src="https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80" 
+                                     onerror="this.onerror=null; this.src='https://placehold.co/600x400/e2e8f0/16a34a?text=Grillgemuese';" 
+                                     alt="Mediterranes Grillgemüse" 
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <span class="absolute top-2 left-2 bg-emerald-600/90 backdrop-blur-md text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md">
+                                    🌱 100% Vegan
+                                </span>
+                            </div>
+                            <span class="text-[10px] font-bold text-herb-700 uppercase tracking-wider bg-herb-50 px-2 py-0.5 rounded-md">Mittwoch (Großseminar)</span>
+                            <h4 class="font-extrabold text-slate-900 text-sm mt-1">Mediterranes Kräuter-Grillgemüse</h4>
+                            <p class="text-xs text-slate-500 mt-1 leading-relaxed">Nutzt die Paprika- & Zucchini-Lieferung komplett. Perfekt geeignet für den veganen 10%-Anteil der 150 Teilnehmer.</p>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+                            <span>Portionen: 150 Pax</span>
+                            <span class="font-bold text-emerald-700">🌱 Veganes Gericht</span>
+                        </div>
+                    </div>
+
+                    <!-- Recipe 3 Photo (FREITAG ZERO WASTE) -->
+                    <div class="border-2 border-emerald-500/40 rounded-2xl p-4 hover:shadow-lg transition-all cursor-pointer bg-emerald-50/20 group flex flex-col justify-between">
+                        <div>
+                            <div class="h-40 bg-slate-100 rounded-xl mb-3 overflow-hidden relative">
+                                <img src="https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=600&q=80" 
+                                     onerror="this.onerror=null; this.src='https://placehold.co/600x400/e2e8f0/16a34a?text=Zero+Waste+Suppe';" 
+                                     alt="Zero Waste Suppe" 
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <span class="absolute top-2 left-2 bg-emerald-700 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md">
+                                    ♻️ Zero Waste Freitag
+                                </span>
+                            </div>
+                            <span class="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider bg-emerald-100 px-2 py-0.5 rounded-md">Freitag (No Waste Special)</span>
+                            <h4 class="font-extrabold text-slate-900 text-sm mt-1">Zero-Waste Wurzelgemüse-Kräutersuppe</h4>
+                            <p class="text-xs text-slate-500 mt-1 leading-relaxed">Der No-Waste Freitag Verwertungshit: Verarbeitet Gemüseschnittreste & Kräuterstängel der Woche zu einer aromatischen Cremesuppe.</p>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-emerald-200/60 flex items-center justify-between text-xs text-slate-600">
+                            <span>Müllreduktion: ~95%</span>
+                            <span class="font-extrabold text-emerald-800">♻️ No-Waste & 🌱 Vegan</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TOOL: EXCEL REZEPT & BESTANDES-UPLOAD -->
+                <div class="bg-gradient-to-r from-slate-900 to-ihkblue-900 text-white rounded-2xl p-5 md:p-6 shadow-xl relative overflow-hidden">
+                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div class="space-y-1 max-w-xl">
+                            <div class="flex items-center gap-2">
+                                <span class="bg-emerald-500/20 text-emerald-300 text-[10px] font-extrabold px-2.5 py-0.5 rounded-md border border-emerald-500/30">
+                                    PRO TOOL
+                                </span>
+                                <h4 class="text-base font-extrabold text-white">Excel-Rezeptdatenbank & Bestände importieren</h4>
+                            </div>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Lade Stefans eigene Rezeptliste oder Lagerbestände als Excel-Datei (.xlsx / .csv) hoch, um die KI-Rezepte automatisch abzugleichen.
+                            </p>
+                        </div>
+
+                        <!-- Dropzone / Input Button -->
+                        <div class="w-full md:w-auto shrink-0">
+                            <div id="excel-drop-zone" class="border-2 border-dashed border-slate-600 hover:border-emerald-400 bg-slate-800/60 hover:bg-slate-800 p-4 rounded-xl text-center cursor-pointer transition-all">
+                                <div class="flex items-center justify-center gap-3">
+                                    <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <div class="text-left">
+                                        <p class="text-xs font-bold text-white">Excel-Datei (.xlsx) auswählen</p>
+                                        <p class="text-[10px] text-slate-400">Oder hierhin ziehen zum Synchronisieren</p>
+                                    </div>
+                                </div>
+                                <input type="file" id="excel-file-input" class="hidden" accept=".xlsx, .xls, .csv">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Excel Status / Feedback Bar -->
+                    <div id="excel-status-msg" class="hidden mt-4 pt-3 border-t border-slate-800/80 text-xs font-semibold text-emerald-400 flex items-center justify-between">
+                        <span class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                            <span id="excel-status-text">Excel-Datei erfolgreich synchronisiert! 200 Speisen & Bestände geladen.</span>
+                        </span>
+                        <span class="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded">KW42_Rezepte_Export.xlsx</span>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <script>
+        // DOM Elements
+        const splashOverlay = document.getElementById('splash-overlay');
+        const heroHatContainer = document.getElementById('hero-hat-container');
+        const headerLogoTarget = document.getElementById('header-logo-target');
+
+        const uploadView = document.getElementById('upload-view');
+        const loadingView = document.getElementById('loading-view');
+        const dashboardView = document.getElementById('dashboard-view');
+
+        const stepBtn1 = document.getElementById('step-btn-1');
+        const stepBtn2 = document.getElementById('step-btn-2');
+
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const progressBar = document.getElementById('progress-bar');
+        const progressPercent = document.getElementById('progress-percent');
+        const loadingText = document.getElementById('loading-text');
+
+        // Excel Upload Tool Event Handlers
+        const excelDropZone = document.getElementById('excel-drop-zone');
+        const excelFileInput = document.getElementById('excel-file-input');
+        const excelStatusMsg = document.getElementById('excel-status-msg');
+        const excelStatusText = document.getElementById('excel-status-text');
+
+        if (excelDropZone && excelFileInput) {
+            excelDropZone.addEventListener('click', () => excelFileInput.click());
+
+            excelDropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                excelDropZone.classList.add('border-emerald-400', 'bg-slate-800');
+            });
+
+            excelDropZone.addEventListener('dragleave', () => {
+                excelDropZone.classList.remove('border-emerald-400');
+            });
+
+            excelDropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                excelDropZone.classList.remove('border-emerald-400');
+                if (e.dataTransfer.files.length > 0) {
+                    handleExcelUpload(e.dataTransfer.files[0].name);
+                }
+            });
+
+            excelFileInput.addEventListener('change', () => {
+                if (excelFileInput.files.length > 0) {
+                    handleExcelUpload(excelFileInput.files[0].name);
+                }
+            });
+        }
+
+        function handleExcelUpload(fileName) {
+            if (!excelStatusMsg) return;
+            excelStatusMsg.classList.remove('hidden');
+            excelStatusText.innerText = `Excel-Datei "${fileName}" erfolgreich analysiert! Speisendatenbank synchronisiert.`;
+        }
+
+        // INTRO ANIMATION: Moves hat from screen center to top-left header logo
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                runHatAnimation();
+            }, 600);
+        });
+
+        function runHatAnimation() {
+            const sourceRect = heroHatContainer.getBoundingClientRect();
+            const targetRect = headerLogoTarget.getBoundingClientRect();
+
+            // Calculate translation distances
+            const deltaX = (targetRect.left + targetRect.width / 2) - (sourceRect.left + sourceRect.width / 2);
+            const deltaY = (targetRect.top + targetRect.height / 2) - (sourceRect.top + sourceRect.height / 2);
+
+            heroHatContainer.style.setProperty('--target-x', `${deltaX}px`);
+            heroHatContainer.style.setProperty('--target-y', `${deltaY}px`);
+
+            // Trigger CSS transition
+            heroHatContainer.classList.add('hat-moved');
+            splashOverlay.style.opacity = '0';
+
+            setTimeout(() => {
+                splashOverlay.style.visibility = 'hidden';
+            }, 1000);
+        }
+
+        // Drag & Drop Listeners
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                startAnalysis();
+            }
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                startAnalysis();
+            }
+        });
+
+        // Navigation between steps
+        function goToStep(step) {
+            if (step === 'upload') {
+                dashboardView.classList.add('hidden');
+                loadingView.classList.add('hidden');
+                uploadView.classList.remove('hidden');
+
+                stepBtn1.className = "px-3 py-1.5 rounded-lg transition-all bg-white text-slate-900 shadow-sm border border-slate-200/60";
+                stepBtn2.className = "px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900";
+            } else if (step === 'dashboard') {
+                uploadView.classList.add('hidden');
+                loadingView.classList.add('hidden');
+                dashboardView.classList.remove('hidden');
+
+                stepBtn1.className = "px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900";
+                stepBtn2.className = "px-3 py-1.5 rounded-lg transition-all bg-white text-slate-900 shadow-sm border border-slate-200/60";
+            }
+        }
+
+        // Trigger PDF analysis sequence when clicking the green button
+        function startAnalysis() {
+            uploadView.classList.add('hidden');
+            loadingView.classList.remove('hidden');
+            loadingView.classList.add('flex');
+
+            let progress = 0;
+            const messages = [
+                "Lese 70-seitigen PDF-Laufplan ein...",
+                "Gleiche Schichtplan mit Gästefrequenz ab...",
+                "Erkenne Krankheitsfälle & BBQ-Sonderveranstaltungen...",
+                "Kalkuliere exakte Bestellmengen für Lieferanten...",
+                "Erstelle frische Zero Waste Rezeptvorschläge..."
+            ];
+
+            let msgIndex = 0;
+
+            const interval = setInterval(() => {
+                progress += 5;
+                if (progress > 100) progress = 100;
+
+                progressBar.style.width = `${progress}%`;
+                progressPercent.innerText = `${progress}%`;
+
+                if (progress % 20 === 0 && msgIndex < messages.length) {
+                    loadingText.innerText = messages[msgIndex];
+                    msgIndex++;
+                }
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        goToStep('dashboard');
+                    }, 350);
+                }
+            }, 70);
+        }
+    </script>
+</body>
+</html>
