@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="de" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GFFT - Gamified Food Feedback Tool (Mario Edition)</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        mario: {
+                            red: '#E52521',
+                            blue: '#00A2E8',
+                            yellow: '#FBD000',
+                            green: '#43B047',
+                            brick: '#8B3A1C',
+                            dark: '#0D1117',
+                            card: '#161B22',
+                            pipe: '#22B14C'
+                        }
+                    },
+                    fontFamily: {
+                        pixel: ['"Press Start 2P"', 'cursive'],
+                        display: ['Fredoka', 'sans-serif'],
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts: Pixel & Playful Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- QRCode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Fredoka', 'Inter', sans-serif;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            background-color: #0B0E14;
+            background-image: 
+                radial-gradient(#1E293B 1px, transparent 1px),
+                radial-gradient(#1E293B 1px, #0B0E14 1px);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+        }
+
+        .font-pixel {
+            font-family: '"Press Start 2P"', cursive;
+        }
+
+        /* Mario Arcade Retro Buttons */
+        .mario-btn {
+            position: relative;
+            box-shadow: 0 6px 0 0 rgba(0,0,0,0.6);
+            transition: all 0.1s ease;
+        }
+        .mario-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 0 rgba(0,0,0,0.6);
+        }
+
+        /* Question Mark Block Box */
+        .q-block {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            border: 3px solid #FFF;
+            box-shadow: 0 0 0 3px #B8860B, 0 6px 0 3px rgba(0,0,0,0.5);
+        }
+
+        /* Swipe card stack styles */
+        .card-stack {
+            position: relative;
+            width: 100%;
+            max-width: 360px;
+            height: 440px;
+        }
+        .swipe-card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 1.25rem;
+            cursor: grab;
+            user-select: none;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            will-change: transform;
+            border: 4px solid #334155;
+            box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.7);
+        }
+        .swipe-card:active {
+            cursor: grabbing;
+        }
+        .stamp {
+            position: absolute;
+            top: 30px;
+            padding: 8px 16px;
+            font-size: 1.5rem;
+            font-weight: 800;
+            border-radius: 12px;
+            border: 4px solid;
+            text-transform: uppercase;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+            z-index: 20;
+            font-family: '"Press Start 2P"', cursive;
+        }
+        .stamp-like {
+            right: 20px;
+            color: #43B047;
+            border-color: #43B047;
+            background: rgba(0,0,0,0.8);
+            transform: rotate(12deg);
+        }
+        .stamp-dislike {
+            left: 20px;
+            color: #E52521;
+            border-color: #E52521;
+            background: rgba(0,0,0,0.8);
+            transform: rotate(-12deg);
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0D1117;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #FBD000;
+            border-radius: 4px;
+        }
+
+        /* Mario Star Pulsing Effect */
+        @keyframes starGlow {
+            0%, 100% { filter: drop-shadow(0 0 8px rgba(251, 208, 0, 0.8)); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 20px rgba(251, 208, 0, 1)); transform: scale(1.05); }
+        }
+        .star-pulse {
+            animation: starGlow 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col text-slate-100 overflow-x-hidden selection:bg-mario-yellow selection:text-slate-950">
+
+    <header class="bg-slate-900/95 border-b-4 border-mario-red sticky top-0 z-50 backdrop-blur-md shadow-2xl">
+        <div class="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between">
+            
+            <!-- Logo with Question Block Style -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchGuestTab('survey')">
+                <div class="w-10 h-10 rounded-xl q-block flex items-center justify-center font-pixel font-bold text-xl text-slate-950 star-pulse">
+                    ?
+                </div>
+                <div>
+                    <h1 class="font-pixel text-base sm:text-lg text-mario-yellow tracking-wider drop-shadow-[0_2px_0_#000]">
+                        GFFT
+                    </h1>
+                    <p class="text-[10px] text-slate-400 font-bold -mt-0.5 hidden sm:block">Gamified Food Feedback Tool</p>
+                </div>
+            </div>
+
+            <!-- Header Right Info & Switcher -->
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                
+                <!-- Coin Counter Box -->
+                <div class="flex items-center space-x-1.5 bg-slate-950 border-2 border-mario-yellow px-3 py-1 rounded-xl shadow-inner">
+                    <i class="fa-solid fa-coins text-mario-yellow text-base animate-bounce"></i>
+                    <span id="userCoins" class="font-pixel text-xs text-amber-300">0</span>
+                </div>
+
+                <!-- Guest / Chef View Switcher -->
+                <div class="bg-slate-950 p-1 rounded-xl border-2 border-slate-800 flex text-xs font-bold">
+                    <button id="btnGuestMode" onclick="switchMode('guest')" class="px-3 py-1 rounded-lg bg-mario-red text-white mario-btn">
+                        <i class="fa-solid fa-gamepad mr-1"></i>Gast
+                    </button>
+                    <button id="btnChefMode" onclick="switchMode('chef')" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-all">
+                        <i class="fa-solid fa-kitchen-set mr-1"></i>Chef-Pitstop
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-5 flex flex-col">
+
+        <!-- ================= GUEST VIEW ================= -->
+        <div id="guestView" class="flex-1 flex flex-col items-center w-full max-w-md mx-auto">
+            
+            <!-- Navigation Tabs -->
+            <nav class="w-full grid grid-cols-5 gap-1.5 bg-slate-900 p-2 rounded-2xl border-2 border-slate-800 mb-4 text-center text-xs font-bold shadow-xl">
+                <button id="tabBtnSurvey" onclick="switchGuestTab('survey')" class="py-2.5 rounded-xl flex flex-col items-center text-mario-yellow bg-slate-800 border-2 border-mario-yellow transition-all">
+                    <i class="fa-solid fa-sliders text-base mb-1"></i>
+                    <span class="text-[10px]">Vorab</span>
+                </button>
+                <button id="tabBtnLunch" onclick="switchGuestTab('lunch')" class="py-2.5 rounded-xl flex flex-col items-center text-slate-400 hover:text-white transition-all">
+                    <i class="fa-solid fa-utensils text-base mb-1"></i>
+                    <span class="text-[10px]">Mittag</span>
+                </button>
+                <button id="tabBtnFeedback" onclick="switchGuestTab('feedback')" class="py-2.5 rounded-xl flex flex-col items-center text-slate-400 hover:text-white transition-all">
+                    <i class="fa-solid fa-comment-dots text-base mb-1"></i>
+                    <span class="text-[10px]">Feedback</span>
+                </button>
+                <button id="tabBtnWheel" onclick="switchGuestTab('wheel')" class="py-2.5 rounded-xl flex flex-col items-center text-slate-400 hover:text-white transition-all">
+                    <i class="fa-solid fa-dharmachakra text-base mb-1"></i>
+                    <span class="text-[10px]">Glücksrad</span>
+                </button>
+                <button id="tabBtnLeaderboard" onclick="switchGuestTab('leaderboard')" class="py-2.5 rounded-xl flex flex-col items-center text-slate-400 hover:text-white transition-all">
+                    <i class="fa-solid fa-trophy text-base mb-1"></i>
+                    <span class="text-[10px]">Rank</span>
+                </button>
+            </nav>
+
+            <section id="tabSurvey" class="w-full flex-1 flex flex-col items-center justify-between">
+                
+                <div id="surveyActiveContainer" class="w-full flex flex-col items-center">
+                    
+                    <div class="w-full flex items-center justify-between mb-2 px-1">
+                        <div>
+                            <span class="text-[10px] font-pixel text-mario-yellow uppercase tracking-widest">Level 1: Check-In</span>
+                            <h2 class="font-display font-bold text-lg text-white">Swipen nach Geschmack!</h2>
+                        </div>
+                        <div class="text-right bg-slate-900 border border-slate-700 px-2.5 py-1 rounded-xl">
+                            <span id="surveyCounter" class="font-pixel text-mario-yellow text-xs">1 / 8</span>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-slate-900 h-3 rounded-full overflow-hidden mb-3 border-2 border-slate-800 p-0.5">
+                        <div id="surveyProgressBar" class="bg-gradient-to-r from-mario-yellow via-amber-400 to-mario-red h-full rounded-full transition-all duration-300 w-[12.5%]"></div>
+                    </div>
+
+                    <!-- Swipe Cards Container Stack -->
+                    <div class="card-stack my-1 flex items-center justify-center">
+                        <div id="stampLike" class="stamp stamp-like"><i class="fa-solid fa-heart mr-2"></i>LECKER!</div>
+                        <div id="stampDislike" class="stamp stamp-dislike"><i class="fa-solid fa-xmark mr-2"></i>NEIN</div>
+
+                        <div id="activeCard" class="swipe-card bg-slate-900 border-4 border-slate-800 overflow-hidden flex flex-col justify-between p-4 relative">
+                            <div class="absolute inset-0 z-0">
+                                <img id="cardImg" src="https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover opacity-60" alt="Food Card" onerror="this.src='https://placehold.co/600x800/1e293b/fbd000?text=GFFT+Food'">
+                                <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+                            </div>
+
+                            <div class="relative z-10 flex justify-between items-start">
+                                <span id="cardCategory" class="px-3 py-1 bg-mario-red text-white font-pixel text-[10px] rounded-lg shadow-md border border-white">
+                                    Frühstücks-Typ
+                                </span>
+                                <span class="bg-slate-950/80 text-mario-yellow px-2.5 py-1 rounded-xl text-xs font-bold border border-amber-500/40 backdrop-blur-sm">
+                                    <i class="fa-solid fa-star text-mario-yellow mr-1"></i>Profil-Match
+                                </span>
+                            </div>
+
+                            <div class="relative z-10 space-y-2 bg-slate-950/90 p-4 rounded-2xl border-2 border-slate-800 backdrop-blur-md">
+                                <h3 id="cardTitle" class="font-display font-bold text-xl text-white leading-tight">
+                                    Liebst du ausgiebiges Frühstück im Hotel?
+                                </h3>
+                                <p id="cardDescription" class="text-xs text-slate-300 leading-relaxed font-sans">
+                                    Buffet mit frischen Brötchen, Eiern, Smoothies & Kaffee ohne Feierabend-Stress!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-center space-x-6 mt-3 w-full">
+                        <button onclick="handleSwipe('left')" class="w-14 h-14 rounded-2xl bg-slate-900 border-2 border-mario-red text-mario-red hover:bg-mario-red hover:text-white transition-all mario-btn flex items-center justify-center text-2xl">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                        <button onclick="handleSwipe('right')" class="w-14 h-14 rounded-2xl bg-slate-900 border-2 border-mario-green text-mario-green hover:bg-mario-green hover:text-white transition-all mario-btn flex items-center justify-center text-2xl">
+                            <i class="fa-solid fa-heart"></i>
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-2 font-bold"><i class="fa-solid fa-hand-pointer mr-1"></i>Karten wischen oder Buttons drücken</p>
+                </div>
+
+                <!-- Result Screen -->
+                <div id="surveyResultContainer" class="hidden w-full bg-slate-900 border-4 border-mario-yellow p-5 rounded-3xl text-center space-y-4 star-pulse my-auto shadow-2xl">
+                    <div class="inline-block px-3 py-1 bg-mario-yellow text-slate-950 font-pixel text-[10px] rounded-lg uppercase tracking-wider">
+                        Dein Food-Charakter!
+                    </div>
+                    
+                    <div class="relative w-36 h-36 mx-auto">
+                        <div class="absolute inset-0 rounded-2xl bg-gradient-to-tr from-mario-yellow to-mario-red animate-spin opacity-40 blur-sm"></div>
+                        <img id="resultCharAvatar" src="https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=400&q=80" class="w-full h-full object-cover rounded-2xl border-4 border-mario-yellow shadow-2xl relative z-10" alt="Character">
+                    </div>
+
+                    <div>
+                        <h2 id="resultCharName" class="font-pixel text-xl sm:text-2xl text-mario-yellow tracking-wider drop-shadow-[0_2px_0_#000]">
+                            BOWSER
+                        </h2>
+                        <p id="resultCharTagline" class="text-xs text-slate-300 font-bold mt-1">
+                            "Fleisch-Gigant & Deftiger Feinschmecker"
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-950 p-4 rounded-2xl border-2 border-slate-800 text-left text-xs text-slate-300 space-y-2 font-sans">
+                        <p id="resultCharDesc">
+                            Du liebst kräftige, herzhafte Gerichte, große Portionen und würzigen Geschmack! Der Chefkoch weiß Bescheid: Bei dir darf es richtig deftig sein.
+                        </p>
+                        <div class="pt-2 border-t border-slate-800 flex justify-between items-center text-[11px] font-bold">
+                            <span class="text-slate-400">Ergebnis übermittelt:</span>
+                            <span class="text-mario-yellow font-pixel text-[10px]">Profil Aktiviert ⭐</span>
+                        </div>
+                    </div>
+
+                    <button onclick="switchGuestTab('lunch')" class="w-full py-3.5 bg-mario-red text-white font-pixel text-xs rounded-2xl hover:bg-red-600 transition-all mario-btn">
+                        Zum Mittags-Menü <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                </div>
+
+            </section>
+
+            <section id="tabLunch" class="hidden w-full space-y-4">
+                <div class="bg-slate-900 border-2 border-slate-800 p-4 rounded-2xl flex justify-between items-center">
+                    <div>
+                        <span class="text-[10px] font-pixel text-mario-yellow uppercase tracking-widest">Level 2: Tageskarte</span>
+                        <h2 class="font-display font-bold text-xl text-white">Heutiges Mittagsmenü</h2>
+                    </div>
+                    <span class="px-2.5 py-1 bg-slate-950 text-slate-300 rounded-xl text-xs font-bold border border-slate-800">
+                        <i class="fa-regular fa-clock mr-1 text-mario-yellow"></i>bis 11:30
+                    </span>
+                </div>
+
+                <div class="space-y-3">
+                    <!-- Option A -->
+                    <div id="lunchCard-A" onclick="selectLunch('A')" class="bg-slate-900 border-2 border-slate-800 hover:border-mario-yellow rounded-2xl p-3.5 transition-all cursor-pointer relative overflow-hidden group">
+                        <div class="flex space-x-3">
+                            <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=300&q=80" class="w-20 h-20 rounded-xl object-cover border-2 border-slate-800" alt="Menu A">
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start">
+                                    <span class="text-[10px] font-pixel text-mario-yellow">Menü 1 • Pasta</span>
+                                    <span id="check-A" class="w-6 h-6 rounded-full border-2 border-slate-700 flex items-center justify-center text-xs text-transparent bg-slate-950">
+                                        <i class="fa-solid fa-check text-slate-950"></i>
+                                    </span>
+                                </div>
+                                <h3 class="font-display font-bold text-slate-100 text-base mt-0.5">Trüffel-Tagliatelle mit Parmesan</h3>
+                                <p class="text-xs text-slate-400 mt-1 line-clamp-2 font-sans">Hausgemachte Pasta mit frisch gehobeltem schwarzen Trüffel, Rahmsauce & Bio-Parmesan.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Option B -->
+                    <div id="lunchCard-B" onclick="selectLunch('B')" class="bg-slate-900 border-2 border-slate-800 hover:border-mario-yellow rounded-2xl p-3.5 transition-all cursor-pointer relative overflow-hidden group">
+                        <div class="flex space-x-3">
+                            <img src="https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=300&q=80" class="w-20 h-20 rounded-xl object-cover border-2 border-slate-800" alt="Menu B">
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start">
+                                    <span class="text-[10px] font-pixel text-mario-red">Menü 2 • Steak</span>
+                                    <span id="check-B" class="w-6 h-6 rounded-full border-2 border-slate-700 flex items-center justify-center text-xs text-transparent bg-slate-950">
+                                        <i class="fa-solid fa-check text-slate-950"></i>
+                                    </span>
+                                </div>
+                                <h3 class="font-display font-bold text-slate-100 text-base mt-0.5">Rosa gebratenes Rindersteak</h3>
+                                <p class="text-xs text-slate-400 mt-1 line-clamp-2 font-sans">Mit Kräuterbutter, Rosmarinkartoffeln und knackigem Marktgemüse.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Option C -->
+                    <div id="lunchCard-C" onclick="selectLunch('C')" class="bg-slate-900 border-2 border-slate-800 hover:border-mario-yellow rounded-2xl p-3.5 transition-all cursor-pointer relative overflow-hidden group">
+                        <div class="flex space-x-3">
+                            <img src="https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=300&q=80" class="w-20 h-20 rounded-xl object-cover border-2 border-slate-800" alt="Menu C">
+                            <div class="flex-1">
+                                <div class="flex justify-between items-start">
+                                    <span class="text-[10px] font-pixel text-mario-green">Menü 3 • Curry</span>
+                                    <span id="check-C" class="w-6 h-6 rounded-full border-2 border-slate-700 flex items-center justify-center text-xs text-transparent bg-slate-950">
+                                        <i class="fa-solid fa-check text-slate-950"></i>
+                                    </span>
+                                </div>
+                                <h3 class="font-display font-bold text-slate-100 text-base mt-0.5">Kokos-Limetten Curry mit Tofu</h3>
+                                <p class="text-xs text-slate-400 mt-1 line-clamp-2 font-sans">Cremiges Red-Curry mit knackigem Wok-Gemüse, Duftreis und frischem Koriander.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border-2 border-slate-800 p-3.5 rounded-2xl flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-mario-yellow flex items-center justify-center text-xl border border-amber-500/30">
+                            <i class="fa-solid fa-ice-cream"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-display font-bold text-sm text-white">Nachtisch dazubuchen?</h4>
+                            <p class="text-xs text-slate-400 font-sans">Heute: Hausgemachtes Tiramisu 🍰</p>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="dessertToggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-950 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-mario-green border border-slate-700"></div>
+                    </label>
+                </div>
+
+                <button onclick="submitLunchOrder()" class="w-full py-3.5 bg-mario-green text-slate-950 font-pixel text-xs rounded-2xl hover:bg-emerald-500 transition-all mario-btn flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-utensils"></i>
+                    <span id="lunchSubmitText">Wahl Absenden</span>
+                </button>
+            </section>
+
+            <section id="tabFeedback" class="hidden w-full space-y-4">
+                <div class="bg-slate-900 border-2 border-slate-800 p-4 rounded-2xl text-center space-y-1">
+                    <span class="text-[10px] font-pixel text-mario-yellow uppercase tracking-widest">Level 3: Nach dem Essen</span>
+                    <h2 class="font-display font-bold text-xl text-white">Wie hat es geschmeckt?</h2>
+                    <p class="text-xs text-slate-400 font-sans">Gib dem Koch Feedback – die einzige Quelle für wertvolle Coins!</p>
+                </div>
+
+                <div class="bg-slate-900 border-2 border-slate-800 p-5 rounded-2xl text-center space-y-3">
+                    <p class="text-xs font-bold text-slate-300">Deine Sterne-Bewertung (+50 Coins)</p>
+                    <div class="flex justify-center space-x-3 text-3xl text-slate-700" id="starRatingContainer">
+                        <i class="fa-solid fa-star cursor-pointer hover:text-mario-yellow transition-colors" onclick="setRating(1)"></i>
+                        <i class="fa-solid fa-star cursor-pointer hover:text-mario-yellow transition-colors" onclick="setRating(2)"></i>
+                        <i class="fa-solid fa-star cursor-pointer hover:text-mario-yellow transition-colors" onclick="setRating(3)"></i>
+                        <i class="fa-solid fa-star cursor-pointer hover:text-mario-yellow transition-colors" onclick="setRating(4)"></i>
+                        <i class="fa-solid fa-star cursor-pointer hover:text-mario-yellow transition-colors" onclick="setRating(5)"></i>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border-2 border-slate-800 p-4 rounded-2xl space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-bold text-slate-300">
+                            Ausführliches Feedback (+100 Extra-Coins 🔥)
+                        </label>
+                        <span class="text-[9px] font-pixel text-mario-yellow bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">Direkt zum Koch</span>
+                    </div>
+                    <textarea id="writtenFeedbackText" rows="3" placeholder="Was war super? Was kann der Koch noch verbessern?" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-mario-yellow transition-all resize-none font-sans"></textarea>
+                </div>
+
+                <button onclick="submitFeedback()" class="w-full py-4 bg-mario-yellow text-slate-950 font-pixel text-xs rounded-2xl hover:bg-amber-400 transition-all mario-btn flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>Feedback Absenden & Coins Verdienen</span>
+                </button>
+            </section>
+
+            <section id="tabWheel" class="hidden w-full flex flex-col items-center space-y-4">
+                <div class="bg-slate-900 border-2 border-slate-800 p-4 rounded-2xl text-center w-full space-y-1">
+                    <span class="text-[10px] font-pixel text-mario-yellow uppercase tracking-widest">Bonus Level</span>
+                    <h2 class="font-display font-bold text-xl text-white">Das Glücksrad</h2>
+                    <p class="text-xs text-slate-400 font-sans">Setze deine verdienten Feedback-Coins ein & gewinne tolle Preise!</p>
+                </div>
+
+                <div class="relative w-72 h-72 flex items-center justify-center my-2">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-20 text-mario-red text-3xl filter drop-shadow-md">
+                        <i class="fa-solid fa-location-pin fa-rotate-180"></i>
+                    </div>
+                    <canvas id="wheelCanvas" width="280" height="280" class="rounded-full shadow-2xl border-4 border-mario-yellow"></canvas>
+                </div>
+
+                <div class="w-full text-center space-y-3">
+                    <div class="flex justify-center items-center space-x-2 text-xs text-mario-yellow bg-slate-900 border border-slate-800 py-1.5 px-3 rounded-xl max-w-xs mx-auto font-sans font-bold">
+                        <i class="fa-solid fa-coins"></i>
+                        <span>Kosten: 50 Coins pro Dreh</span>
+                    </div>
+
+                    <button id="btnSpinWheel" onclick="spinWheel()" class="w-full py-4 bg-mario-red text-white font-pixel text-xs rounded-2xl hover:bg-red-600 transition-all mario-btn">
+                        <i class="fa-solid fa-rotate mr-2"></i>GLÜCKSRAD DREHEN (50 🪙)
+                    </button>
+                    <p id="wheelStatus" class="text-xs text-slate-400 font-sans">Gib nach dem Essen Feedback, um Coins für das Glücksrad zu sammeln!</p>
+                </div>
+            </section>
+
+            <section id="tabLeaderboard" class="hidden w-full space-y-4">
+                <div class="bg-slate-900 border-2 border-slate-800 p-4 rounded-2xl text-center space-y-1 relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 opacity-10 text-6xl font-pixel text-mario-yellow">🏆</div>
+                    <span class="text-[10px] font-pixel text-mario-yellow uppercase tracking-widest"><i class="fa-solid fa-trophy mr-1"></i>Grand Prix Leaderboard</span>
+                    <h2 class="font-display font-bold text-2xl text-white">Foodie Highscore</h2>
+                    <p class="text-xs text-slate-400 font-sans">Sammle Feedback-Coins & werde Champion der Hotelküche!</p>
+                </div>
+
+                <div class="bg-gradient-to-r from-mario-red/20 via-mario-yellow/20 to-mario-green/20 border-2 border-mario-yellow p-4 rounded-2xl flex items-center justify-between gap-3 text-xs relative overflow-hidden">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-11 h-11 rounded-2xl bg-mario-yellow text-slate-950 flex items-center justify-center text-xl shrink-0 font-pixel shadow-md border-2 border-white">
+                            📣
+                        </div>
+                        <div class="font-sans">
+                            <span class="font-pixel text-[9px] text-mario-yellow uppercase block">Küchen-Ansporn</span>
+                            <p id="leaderboardMotivationText" class="text-slate-100 text-xs font-bold italic mt-0.5">
+                                "Bowser aus Zimmer 312 verteidigt Platz 1! Gib dem Koch heute Feedback (+150 Coins), um ihn einzuholen!"
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="cycleMotivationQuote()" class="shrink-0 p-2 bg-slate-950 border border-amber-500/50 text-mario-yellow rounded-xl hover:bg-slate-800 transition-all text-xs font-pixel">
+                        🎲
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2.5 items-end pt-5 pb-2">
+                    <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-slate-400 p-3 rounded-2xl text-center flex flex-col items-center shadow-lg relative">
+                        <div class="absolute -top-3 px-2 py-0.5 bg-slate-400 text-slate-950 font-pixel text-[9px] rounded-full uppercase font-bold">#2 SILBER</div>
+                        <div class="w-12 h-12 rounded-2xl bg-slate-800 border-2 border-slate-400 flex items-center justify-center text-xl my-2 shadow-inner">🐢</div>
+                        <span class="font-display text-sm text-white font-bold">Koopa</span>
+                        <span class="text-[11px] text-slate-300 font-sans">Zimmer 204</span>
+                        <div class="mt-2 px-2.5 py-1 bg-slate-950 rounded-xl border border-slate-700 font-pixel text-[10px] text-amber-300">350 🪙</div>
+                    </div>
+
+                    <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-4 border-mario-yellow p-3 rounded-2xl text-center flex flex-col items-center shadow-2xl relative -mt-5 star-pulse">
+                        <i class="fa-solid fa-crown text-mario-yellow text-2xl absolute -top-4 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] animate-bounce"></i>
+                        <div class="mt-1 px-2.5 py-0.5 bg-mario-yellow text-slate-950 font-pixel text-[9px] rounded-full uppercase font-bold">#1 GOLD</div>
+                        <div class="w-14 h-14 rounded-2xl bg-slate-800 border-2 border-mario-yellow flex items-center justify-center text-2xl my-2 shadow-inner">🦖</div>
+                        <span class="font-display text-base text-mario-yellow font-bold">Bowser</span>
+                        <span class="text-xs text-slate-300 font-sans">Zimmer 312</span>
+                        <div class="mt-2 px-3 py-1 bg-mario-yellow text-slate-950 rounded-xl font-pixel text-xs font-bold shadow-md">450 🪙</div>
+                    </div>
+
+                    <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-700 p-3 rounded-2xl text-center flex flex-col items-center shadow-lg relative">
+                        <div class="absolute -top-3 px-2 py-0.5 bg-amber-700 text-amber-100 font-pixel text-[9px] rounded-full uppercase font-bold">#3 BRONZE</div>
+                        <div class="w-12 h-12 rounded-2xl bg-slate-800 border-2 border-amber-700 flex items-center justify-center text-xl my-2 shadow-inner">🦕</div>
+                        <span class="font-display text-sm text-white font-bold">Yoshi</span>
+                        <span class="text-[11px] text-slate-300 font-sans">Zimmer 108</span>
+                        <div class="mt-2 px-2.5 py-1 bg-slate-950 rounded-xl border border-slate-700 font-pixel text-[10px] text-amber-300">250 🪙</div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border-2 border-slate-800 rounded-2xl divide-y divide-slate-800 overflow-hidden text-xs shadow-xl">
+                    <div class="p-3.5 flex items-center justify-between bg-mario-yellow/10 border-l-4 border-mario-yellow">
+                        <div class="flex items-center space-x-3">
+                            <span class="font-pixel text-xs text-mario-yellow w-5 font-bold">#4</span>
+                            <div class="w-8 h-8 rounded-xl bg-slate-950 border border-mario-yellow flex items-center justify-center text-sm">👻</div>
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="font-bold text-white font-display">Zimmer 402 (Du)</span>
+                                    <span class="px-1.5 py-0.2 bg-mario-yellow text-slate-950 font-pixel text-[8px] rounded">DU</span>
+                                </div>
+                                <span class="text-[11px] text-slate-400 block font-sans">Kreatur: <strong id="lbUserChar" class="text-mario-yellow">Wird ermittelt...</strong></span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span id="lbUserCoins" class="font-pixel text-xs text-amber-300 font-bold block">0 🪙</span>
+                            <span class="text-[9px] text-slate-400 font-sans">Noch Coins bis Rang 3</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- ================= ENHANCED CHEF DASHBOARD VIEW ================= -->
+        <div id="chefView" class="hidden flex-1 w-full space-y-6">
+            
+            <div class="bg-slate-900 border-4 border-slate-800 p-5 rounded-3xl flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-2xl relative overflow-hidden">
+                <div class="relative z-10">
+                    <div class="flex items-center space-x-2 text-mario-yellow text-xs font-pixel uppercase tracking-wider">
+                        <i class="fa-solid fa-kitchen-set"></i>
+                        <span>Chef-Pitstop • Mario Küchen-Cockpit</span>
+                    </div>
+                    <h2 class="font-display font-bold text-2xl sm:text-3xl text-white mt-1">
+                        Gäste-Analyse & Küchen-Produktionsplan
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1 font-sans max-w-xl">
+                        Echtzeit-Übersicht aller Gäste-Profile, Essenswünsche, Vorbestellungen & Qualitäts-Feedback.
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 relative z-10">
+                    <button onclick="openQrModal()" class="px-4 py-2.5 bg-slate-800 border-2 border-mario-yellow text-mario-yellow text-xs font-pixel rounded-xl hover:bg-slate-700 transition-all flex items-center mario-btn">
+                        <i class="fa-solid fa-qrcode mr-2 text-sm"></i>Check-In QR
+                    </button>
+                    <button onclick="resetDemoData()" class="px-3 py-2.5 bg-slate-950 border border-slate-700 text-slate-400 text-xs font-bold rounded-xl hover:text-white transition-all">
+                        <i class="fa-solid fa-rotate-left mr-1"></i>Reset Data
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="bg-slate-900 border-2 border-slate-800 p-4 rounded-2xl flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-mario-red/20 text-mario-red border border-mario-red/40 flex items-center justify-center text-xl shrink-0 font-pixel">👥</div>
+                    <div>
+                        <span class="text-[11px] text-slate-400 font-bold font-sans block">Gäste im Haus</span>
+                        <span id="statTotalGuests" class="font-pixel text-xl text-white">42</span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border-2 border-slate-800 p-4 rounded-2xl flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-mario-yellow/20 text-mario-yellow border border-mario-yellow/40 flex items-center justify-center text-xl shrink-0 font-pixel">👑</div>
+                    <div>
+                        <span class="text-[11px] text-slate-400 font-bold font-sans block">Top Kreatur</span>
+                        <span id="statDominantChar" class="font-pixel text-sm text-mario-yellow">BOWSER (33%)</span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border-2 border-slate-800 p-4 rounded-2xl flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-mario-green/20 text-mario-green border border-mario-green/40 flex items-center justify-center text-xl shrink-0 font-pixel">🍽️</div>
+                    <div>
+                        <span class="text-[11px] text-slate-400 font-bold font-sans block">Mittags-Bestellungen</span>
+                        <span id="statLunchOrders" class="font-pixel text-xl text-white">32 / 42</span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border-2 border-slate-800 p-4 rounded-2xl flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center text-xl shrink-0 font-pixel">⭐</div>
+                    <div>
+                        <span class="text-[11px] text-slate-400 font-bold font-sans block">Zufriedenheit</span>
+                        <span id="statAvgRating" class="font-pixel text-lg text-mario-yellow">4.8 / 5.0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Creature Distribution Matrix -->
+            <div class="bg-slate-900 border-2 border-slate-800 p-5 rounded-3xl space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                    <div>
+                        <span class="text-[10px] font-pixel text-mario-yellow uppercase tracking-widest">Geschmacks-Profile der Hotelgäste</span>
+                        <h3 class="font-display font-bold text-xl text-white flex items-center mt-0.5">
+                            <i class="fa-solid fa-users-line text-mario-yellow mr-2"></i>
+                            Verteilung aller 8 Mario Kart Food-Kreaturen
+                        </h3>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3" id="chefCharGrid"></div>
+            </div>
+
+            <!-- Orders & Feedback Grid -->
+            <div class="grid lg:grid-cols-2 gap-6">
+                <div class="bg-slate-900 border-2 border-slate-800 p-5 rounded-3xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-display font-bold text-lg text-white flex items-center">
+                            <i class="fa-solid fa-clipboard-list text-mario-green mr-2"></i>Mittags-Bestellungen Live
+                        </h3>
+                        <span class="text-xs px-3 py-1 bg-slate-950 text-mario-green font-bold rounded-xl border border-slate-800" id="orderCountBadge">
+                            32 Vorbestellungen
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2 text-center text-xs font-sans">
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-mario-yellow font-bold block text-[11px]">Menü 1 (Pasta)</span>
+                            <span id="menuACount" class="font-pixel text-base text-white mt-1 block">14</span>
+                        </div>
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-mario-red font-bold block text-[11px]">Menü 2 (Steak)</span>
+                            <span id="menuBCount" class="font-pixel text-base text-white mt-1 block">12</span>
+                        </div>
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-mario-green font-bold block text-[11px]">Menü 3 (Curry)</span>
+                            <span id="menuCCount" class="font-pixel text-base text-white mt-1 block">6</span>
+                        </div>
+                        <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                            <span class="text-purple-400 font-bold block text-[11px]">Nachtisch🍰</span>
+                            <span id="dessertCount" class="font-pixel text-base text-white mt-1 block">22</span>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-1.5 text-xs font-bold font-sans bg-slate-950 p-1 rounded-xl border border-slate-800">
+                        <button onclick="filterChefOrders('all')" id="btnOrderFilterAll" class="flex-1 py-1.5 rounded-lg bg-slate-800 text-white">Alle</button>
+                        <button onclick="filterChefOrders('A')" id="btnOrderFilterA" class="flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white">Menü 1</button>
+                        <button onclick="filterChefOrders('B')" id="btnOrderFilterB" class="flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white">Menü 2</button>
+                        <button onclick="filterChefOrders('C')" id="btnOrderFilterC" class="flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white">Menü 3</button>
+                    </div>
+
+                    <div class="max-h-80 overflow-y-auto space-y-2.5 pr-1 font-sans" id="ordersFeed"></div>
+                </div>
+
+                <div class="bg-slate-900 border-2 border-slate-800 p-5 rounded-3xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-display font-bold text-lg text-white flex items-center">
+                            <i class="fa-solid fa-star-half-stroke text-mario-yellow mr-2"></i>Gäste-Feedback Live
+                        </h3>
+                    </div>
+
+                    <div class="flex space-x-1.5 text-xs font-bold font-sans bg-slate-950 p-1 rounded-xl border border-slate-800">
+                        <button onclick="filterChefFeedback('all')" id="btnFeedbackFilterAll" class="flex-1 py-1.5 rounded-lg bg-slate-800 text-white">Alle Feedbacks</button>
+                        <button onclick="filterChefFeedback(5)" id="btnFeedbackFilter5" class="flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white">5 Sterne ★</button>
+                        <button onclick="filterChefFeedback('text')" id="btnFeedbackFilterText" class="flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white">Mit Text 💬</button>
+                    </div>
+
+                    <div class="max-h-72 overflow-y-auto space-y-2.5 pr-1 font-sans" id="feedbackFeed"></div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- QR Code Modal -->
+    <div id="qrModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border-4 border-mario-yellow p-6 rounded-3xl max-w-sm w-full text-center space-y-4 relative shadow-2xl">
+            <button onclick="closeQrModal()" class="absolute top-3 right-3 text-slate-400 hover:text-white text-xl p-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <span class="text-[10px] font-pixel text-mario-yellow uppercase tracking-widest block">Check-In QR Code</span>
+            <h3 class="font-display font-bold text-xl text-white">Scannen & Starten</h3>
+            <p class="text-xs text-slate-300 font-sans">Gäste scannen diesen Code am Hoteleingang oder Tisch, um direkt zum Tool zu gelangen.</p>
+            <div class="bg-white p-4 rounded-2xl inline-block shadow-inner" id="qrcode"></div>
+            <button onclick="closeQrModal()" class="w-full py-3 bg-mario-red text-white font-pixel text-xs rounded-xl hover:bg-red-600 transition-all mario-btn">
+                Schließen
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* Web Audio API Sound Synthesizer */
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playCoinSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(987.77, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(1318.51, audioCtx.currentTime + 0.08);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+
+        function playFanfareSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+            notes.forEach((freq, idx) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.1);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime + idx * 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + idx * 0.1 + 0.25);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(audioCtx.currentTime + idx * 0.1);
+                osc.stop(audioCtx.currentTime + idx * 0.1 + 0.25);
+            });
+        }
+
+        /* Toast Notifications */
+        function showToast(title, message, icon = 'fa-circle-check') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'pointer-events-auto bg-slate-900 border-2 border-mario-yellow text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 transition-all duration-300 transform translate-y-5 opacity-0';
+            toast.innerHTML = `
+                <div class="text-mario-yellow text-xl"><i class="fa-solid ${icon}"></i></div>
+                <div>
+                    <h5 class="font-pixel text-[10px] text-mario-yellow">${title}</h5>
+                    <p class="text-xs text-slate-300 font-sans">${message}</p>
+                </div>
+            `;
+            container.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-5', 'opacity-0');
+            });
+            setTimeout(() => {
+                toast.classList.add('translate-y-5', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        /* Mario Kart Character Definitions */
+        const MARIO_CHARACTERS = {
+            bowser: { name: 'Bowser', tagline: 'Fleisch-Gigant & Deftiger Feinschmecker', avatar: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=400&q=80', desc: 'Du liebst große Portionen, saftige Steaks, feurige Schärfe und herzhafte Saucen!', icon: '🦖', dietary: 'Große Fleisch-Portionen & Deftig' },
+            yoshi: { name: 'Yoshi', tagline: 'Frisch, Vegan & Vital-Liebhaber', avatar: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=400&q=80', desc: 'Bunt, gesund und knackig! Frisches Gemüse und Bowls stehen bei dir an 1. Stelle.', icon: '🦕', dietary: 'Veggie/Vegan & Frische Bowls' },
+            toad: { name: 'Toad', tagline: 'Frühstücks-Fanatiker & Quick-Bites', avatar: 'https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=400&q=80', desc: 'Du startest am liebsten riesig in den Tag! Ausgiebiges Buffet-Frühstück macht dich glücklich.', icon: '🍄', dietary: 'Reichhaltiges Frühstück' },
+            shyguy: { name: 'Shy Guy', tagline: 'Geheimtipp-Gourmet & Ausgewogener Esser', avatar: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=400&q=80', desc: 'Neugierig auf exotische Gewürze, feine Pasta und ausgewogene Teller.', icon: '🎭', dietary: 'Feine Pasta & Saucen' },
+            koopa: { name: 'Koopa Troopa', tagline: 'Klassiker-Fan & Bodenständige Küche', avatar: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=400&q=80', desc: 'Ehrlich, verlässlich und traditionell! Hausmannskost & wohlbekannte Gerichte.', icon: '🐢', dietary: 'Hausmannskost' },
+            boo: { name: 'Buu Huu (Boo)', tagline: 'Süßspeisen-Geist & Dessert-Liebhaber', avatar: 'https://images.unsplash.com/photo-1587314168485-3236d6710814?auto=format&fit=crop&w=400&q=80', desc: 'Für dich geht nichts ohne ein edles Dessert nach jedem Essen.', icon: '👻', dietary: 'Dessert-Liebhaber' },
+            dk: { name: 'Donkey Kong', tagline: 'BBQ & Protein-Kraftpaket', avatar: 'https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=400&q=80', desc: 'Proteinreich und gegrillt! BBQ-Spezialitäten mit kräftigem Geschmack.', icon: '🦍', dietary: 'High Protein & BBQ' },
+            bobomb: { name: 'Bob-omb', tagline: 'Feurig-Scharf & Würzig-Explosiv', avatar: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=400&q=80', desc: 'Geschmacksexplosion garantiert! Du magst es feurig spicy mit Jalapeños und Chilis.', icon: '💣', dietary: 'Feurig-scharf' }
+        };
+
+        const surveyQuestions = [
+            { category: "Frühstücks-Typ", title: "Liebst du ausgiebiges Frühstück im Hotel?", desc: "Buffet mit frischen Brötchen, Eiern, Smoothies & Kaffee!", img: "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=800&q=80", trait: "toad" },
+            { category: "Fleisch-Liebhaber", title: "Ist ein perfekt gebratenes Steak dein Highlight?", desc: "Außen kross, innen rosa saftig – kräftiger Fleischgeschmack!", img: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80", trait: "bowser" },
+            { category: "Veggie & Fresh", title: "Magst du frische, bunte Bowls & Gemüsekreationen?", desc: "Knackiges Marktgemüse, Avocados & pflanzliche Zutaten.", img: "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80", trait: "yoshi" },
+            { category: "Spicy & Fire", title: "Darf es für dich feurig-scharf & intensiv gewürzt sein?", desc: "Chilis, Jalapeños und kräftiges BBQ-Aroma!", img: "https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=800&q=80", trait: "bobomb" },
+            { category: "Dessert-Lover", title: "Kein Menü ohne ein sündhaft süßes Dessert?", desc: "Tiramisu oder Schokoladenfondant nach dem Essen!", img: "https://images.unsplash.com/photo-1587314168485-3236d6710814?auto=format&fit=crop&w=800&q=80", trait: "boo" },
+            { category: "Gourmet & Pasta", title: "Trüffel-Pasta & cremig feine Saucen?", desc: "Bio-Parmesan, feine Kräuter und internationale Gourmet-Aromen.", img: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=800&q=80", trait: "shyguy" },
+            { category: "BBQ & Power", title: "Gegrilltes BBQ & High-Protein-Power?", desc: "Kräftige Portionen mit Röstaromen und Power für den Tag!", img: "https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=800&q=80", trait: "dk" },
+            { category: "Klassiker-Fan", title: "Schätzt du traditionelle Wohlfühlküche?", desc: "Verlässliche Klassiker, hausgemachte Klöße & saftiger Braten.", img: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80", trait: "koopa" }
+        ];
+
+        /* Application State */
+        let state = {
+            coins: 0,
+            currentQuestionIdx: 0,
+            answers: [],
+            userCharacter: null,
+            selectedLunch: null,
+            feedbackRating: 0,
+            currentOrderFilter: 'all',
+            currentFeedbackFilter: 'all',
+            chefStats: { bowser: 14, yoshi: 10, toad: 6, shyguy: 5, koopa: 3, boo: 2, dk: 1, bobomb: 1 },
+            orders: [
+                { id: 1, room: "Zimmer 204", menuCode: "A", menu: "Menü 1 (Pasta)", dessert: "Ja", char: "Shy Guy", time: "10:12", status: "In Zubereitung" },
+                { id: 2, room: "Zimmer 312", menuCode: "B", menu: "Menü 2 (Steak)", dessert: "Ja", char: "Bowser", time: "10:25", status: "In Zubereitung" },
+                { id: 3, room: "Zimmer 108", menuCode: "C", menu: "Menü 3 (Curry)", dessert: "Nein", char: "Yoshi", time: "10:41", status: "In Zubereitung" }
+            ],
+            feedbacks: [
+                { room: "Zimmer 312", stars: 5, text: "Das Rindersteak war auf den Punkt rosa!", time: "Vor 15 Min", char: "Bowser" },
+                { room: "Zimmer 204", stars: 5, text: "Trüffel-Pasta war phänomenal.", time: "Vor 45 Min", char: "Shy Guy" }
+            ]
+        };
+
+        const MOTIVATION_QUOTES = [
+            "\"Bowser aus Zimmer 312 verteidigt Platz 1! Gib dem Koch heute Feedback (+150 Coins), um ihn einzuholen!\"",
+            "\"Koopa aus Zimmer 204 lauert auf Platz 2. Schreibe Feedback nach dem Essen & hol dir die Krone!\"",
+            "\"Der Koch liest jedes Feedback persönlich! Belohnung: Bis zu 150 Coins & Glücksrad-Chance!\""
+        ];
+        let currentQuoteIdx = 0;
+
+        function cycleMotivationQuote() {
+            currentQuoteIdx = (currentQuoteIdx + 1) % MOTIVATION_QUOTES.length;
+            document.getElementById('leaderboardMotivationText').textContent = MOTIVATION_QUOTES[currentQuoteIdx];
+        }
+
+        /* Coin management */
+        function addCoins(amount, reason) {
+            state.coins += amount;
+            updateCoinsDisplay();
+            playCoinSound();
+            if (reason) showToast(`+${amount} Coins!`, reason, 'fa-coins');
+        }
+
+        function updateCoinsDisplay() {
+            document.getElementById('userCoins').textContent = state.coins;
+            document.getElementById('lbUserCoins').textContent = `${state.coins} 🪙`;
+        }
+
+        /* View & Tab Handlers */
+        function switchMode(mode) {
+            const guestView = document.getElementById('guestView');
+            const chefView = document.getElementById('chefView');
+            const btnGuest = document.getElementById('btnGuestMode');
+            const btnChef = document.getElementById('btnChefMode');
+
+            if (mode === 'guest') {
+                guestView.classList.remove('hidden');
+                chefView.classList.add('hidden');
+                btnGuest.className = "px-3 py-1 rounded-lg bg-mario-red text-white mario-btn";
+                btnChef.className = "px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-all";
+            } else {
+                guestView.classList.add('hidden');
+                chefView.classList.remove('hidden');
+                btnChef.className = "px-3 py-1 rounded-lg bg-mario-red text-white mario-btn";
+                btnGuest.className = "px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-all";
+                renderChefDashboard();
+            }
+        }
+
+        function switchGuestTab(tabName) {
+            const tabs = ['survey', 'lunch', 'feedback', 'wheel', 'leaderboard'];
+            tabs.forEach(tab => {
+                const content = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+                const btn = document.getElementById('tabBtn' + tab.charAt(0).toUpperCase() + tab.slice(1));
+                if (tab === tabName) {
+                    content.classList.remove('hidden');
+                    btn.className = "py-2.5 rounded-xl flex flex-col items-center text-mario-yellow bg-slate-800 border-2 border-mario-yellow transition-all";
+                } else {
+                    content.classList.add('hidden');
+                    btn.className = "py-2.5 rounded-xl flex flex-col items-center text-slate-400 hover:text-white transition-all";
+                }
+            });
+
+            if (tabName === 'wheel') initWheel();
+        }
+
+        function renderCard() {
+            if (state.currentQuestionIdx >= surveyQuestions.length) {
+                finishSurvey();
+                return;
+            }
+            const q = surveyQuestions[state.currentQuestionIdx];
+            document.getElementById('cardCategory').textContent = q.category;
+            document.getElementById('cardTitle').textContent = q.title;
+            document.getElementById('cardDescription').textContent = q.desc;
+            document.getElementById('cardImg').src = q.img;
+            document.getElementById('surveyCounter').textContent = `${state.currentQuestionIdx + 1} / ${surveyQuestions.length}`;
+            const pct = ((state.currentQuestionIdx + 1) / surveyQuestions.length) * 100;
+            document.getElementById('surveyProgressBar').style.width = `${pct}%`;
+
+            const activeCard = document.getElementById('activeCard');
+            activeCard.style.transform = 'none';
+            activeCard.style.opacity = '1';
+            document.getElementById('stampLike').style.opacity = '0';
+            document.getElementById('stampDislike').style.opacity = '0';
+        }
+
+        function handleSwipe(direction) {
+            if (state.currentQuestionIdx >= surveyQuestions.length) return;
+
+            const currentQ = surveyQuestions[state.currentQuestionIdx];
+            if (direction === 'right') {
+                state.answers.push(currentQ.trait);
+                addCoins(10, "Geschmack gemerkt!");
+            }
+
+            const activeCard = document.getElementById('activeCard');
+            const xTrans = direction === 'right' ? 400 : -400;
+            const rotate = direction === 'right' ? 20 : -20;
+            
+            activeCard.style.transform = `translate(${xTrans}px, -50px) rotate(${rotate}deg)`;
+            activeCard.style.opacity = '0';
+
+            setTimeout(() => {
+                state.currentQuestionIdx++;
+                renderCard();
+            }, 200);
+        }
+
+        function finishSurvey() {
+            document.getElementById('surveyActiveContainer').classList.add('hidden');
+            document.getElementById('surveyResultContainer').classList.remove('hidden');
+
+            const counts = {};
+            state.answers.forEach(trait => counts[trait] = (counts[trait] || 0) + 1);
+
+            let bestTrait = 'bowser';
+            let max = 0;
+            for (const t in counts) {
+                if (counts[t] > max) { max = counts[t]; bestTrait = t; }
+            }
+
+            const char = MARIO_CHARACTERS[bestTrait] || MARIO_CHARACTERS.bowser;
+            state.userCharacter = char;
+
+            document.getElementById('resultCharName').textContent = char.name.toUpperCase();
+            document.getElementById('resultCharTagline').textContent = `"${char.tagline}"`;
+            document.getElementById('resultCharDesc').textContent = char.desc;
+            document.getElementById('resultCharAvatar').src = char.avatar;
+            document.getElementById('lbUserChar').textContent = char.name;
+
+            if (state.chefStats[bestTrait] !== undefined) state.chefStats[bestTrait]++;
+
+            playFanfareSound();
+            if (typeof confetti === 'function') confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+            addCoins(100, "Profil-Check-In abgeschlossen!");
+            renderChefDashboard();
+        }
+
+        function setupCardDrag() {
+            const card = document.getElementById('activeCard');
+            let startX = 0, currentX = 0, isDragging = false;
+
+            function onStart(e) {
+                isDragging = true;
+                startX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            }
+
+            function onMove(e) {
+                if (!isDragging) return;
+                currentX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                const diffX = currentX - startX;
+                card.style.transform = `translateX(${diffX}px) rotate(${diffX * 0.05}deg)`;
+
+                const stampLike = document.getElementById('stampLike');
+                const stampDislike = document.getElementById('stampDislike');
+
+                if (diffX > 40) {
+                    stampLike.style.opacity = Math.min(1, (diffX - 40) / 60);
+                    stampDislike.style.opacity = '0';
+                } else if (diffX < -40) {
+                    stampDislike.style.opacity = Math.min(1, (-diffX - 40) / 60);
+                    stampLike.style.opacity = '0';
+                } else {
+                    stampLike.style.opacity = '0';
+                    stampDislike.style.opacity = '0';
+                }
+            }
+
+            function onEnd() {
+                if (!isDragging) return;
+                isDragging = false;
+                const diffX = currentX - startX;
+                if (diffX > 80) handleSwipe('right');
+                else if (diffX < -80) handleSwipe('left');
+                else {
+                    card.style.transform = 'none';
+                    document.getElementById('stampLike').style.opacity = '0';
+                    document.getElementById('stampDislike').style.opacity = '0';
+                }
+                startX = 0; currentX = 0;
+            }
+
+            card.addEventListener('mousedown', onStart);
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onEnd);
+
+            card.addEventListener('touchstart', onStart, { passive: true });
+            window.addEventListener('touchmove', onMove, { passive: true });
+            window.addEventListener('touchend', onEnd);
+        }
+
+        function selectLunch(opt) {
+            state.selectedLunch = opt;
+            ['A', 'B', 'C'].forEach(o => {
+                const card = document.getElementById('lunchCard-' + o);
+                const check = document.getElementById('check-' + o);
+                if (o === opt) {
+                    card.className = "bg-slate-900 border-2 border-mario-yellow rounded-2xl p-3.5 transition-all cursor-pointer relative overflow-hidden group shadow-lg";
+                    check.className = "w-6 h-6 rounded-full border-2 border-mario-yellow flex items-center justify-center text-xs text-slate-950 bg-mario-yellow font-bold";
+                } else {
+                    card.className = "bg-slate-900 border-2 border-slate-800 hover:border-mario-yellow rounded-2xl p-3.5 transition-all cursor-pointer relative overflow-hidden group";
+                    check.className = "w-6 h-6 rounded-full border-2 border-slate-700 flex items-center justify-center text-xs text-transparent bg-slate-950";
+                }
+            });
+        }
+
+        function setRating(r) {
+            state.feedbackRating = r;
+            const stars = document.getElementById('starRatingContainer').children;
+            for (let i = 0; i < stars.length; i++) {
+                if (i < r) stars[i].className = "fa-solid fa-star cursor-pointer text-mario-yellow transition-colors";
+                else stars[i].className = "fa-solid fa-star cursor-pointer text-slate-700 hover:text-mario-yellow transition-colors";
+            }
+        }
+
+        function submitFeedback() {
+            if (state.feedbackRating === 0) {
+                showToast("Sterne wählen", "Bitte vergebe mindestens 1 Stern.", "fa-star");
+                return;
+            }
+
+            const text = document.getElementById('writtenFeedbackText').value.trim();
+            let coinsEarned = 50;
+            if (text.length > 5) coinsEarned += 100;
+
+            const newFb = {
+                room: "Zimmer 402 (Du)",
+                stars: state.feedbackRating,
+                text: text || "Sterne-Bewertung abgegeben.",
+                time: "Gerade eben",
+                char: state.userCharacter ? state.userCharacter.name : "Gast"
+            };
+
+            state.feedbacks.unshift(newFb);
+            addCoins(coinsEarned, "Feedback-Belohnung beim Koch eingegangen!");
+            document.getElementById('writtenFeedbackText').value = "";
+            setRating(0);
+
+            renderChefDashboard();
+        }
+
+        function submitLunchOrder() {
+            if (!state.selectedLunch) {
+                showToast("Bitte wählen!", "Wähle zuerst ein Menü aus.", "fa-utensils");
+                return;
+            }
+
+            const isDessert = document.getElementById('dessertToggle').checked;
+            const menuNames = { A: "Menü 1 (Pasta)", B: "Menü 2 (Steak)", C: "Menü 3 (Curry)" };
+            const menuName = menuNames[state.selectedLunch];
+
+            state.orders.unshift({
+                id: Date.now(),
+                room: "Zimmer 402 (Du)",
+                menuCode: state.selectedLunch,
+                menu: menuName,
+                dessert: isDessert ? "Ja" : "Nein",
+                char: state.userCharacter ? state.userCharacter.name : "Bowser",
+                time: "Jetzt",
+                status: "In Zubereitung"
+            });
+
+            showToast("Bestellung Übermittelt!", "Der Koch bereitet dein Essen vor.", "fa-circle-check");
+            document.getElementById('lunchSubmitText').textContent = "✓ Bestellung übermittelt!";
+            renderChefDashboard();
+        }
+
+        const wheelSlices = [
+            { label: "100 COINS", color: "#E52521", value: 100, type: "coins" },
+            { label: "DRINK 🥤", color: "#00A2E8", value: "Freigetränk", type: "item" },
+            { label: "50 COINS", color: "#FBD000", value: 50, type: "coins" },
+            { label: "DESSERT 🍰", color: "#43B047", value: "Gratis Dessert", type: "item" },
+            { label: "150 COINS", color: "#8B3A1C", value: 150, type: "coins" },
+            { label: "KAFFEE ☕", color: "#22B14C", value: "Gratis Kaffee", type: "item" }
+        ];
+
+        let currentWheelAngle = 0;
+        let isSpinning = false;
+
+        function initWheel() { drawWheel(currentWheelAngle); }
+
+        function drawWheel(angle) {
+            const canvas = document.getElementById('wheelCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const radius = canvas.width / 2;
+            const sliceAngle = (2 * Math.PI) / wheelSlices.length;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            wheelSlices.forEach((slice, i) => {
+                const startAngle = angle + i * sliceAngle;
+                const endAngle = startAngle + sliceAngle;
+
+                ctx.beginPath();
+                ctx.moveTo(radius, radius);
+                ctx.arc(radius, radius, radius - 8, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = slice.color;
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = "#0D1117";
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(radius, radius);
+                ctx.rotate(startAngle + sliceAngle / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 10px 'Press Start 2P'";
+                ctx.fillText(slice.label, radius - 20, 4);
+                ctx.restore();
+            });
+
+            ctx.beginPath();
+            ctx.arc(radius, radius, 25, 0, 2 * Math.PI);
+            ctx.fillStyle = "#FBD000";
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "#FFFFFF";
+            ctx.stroke();
+
+            ctx.fillStyle = "#000000";
+            ctx.font = "bold 16px 'Press Start 2P'";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("?", radius, radius + 2);
+        }
+
+        function spinWheel() {
+            if (isSpinning) return;
+            if (state.coins < 50) {
+                showToast("Nicht genug Coins!", "Du benötigst 50 Coins für eine Drehung.", "fa-triangle-exclamation");
+                return;
+            }
+
+            state.coins -= 50;
+            updateCoinsDisplay();
+            isSpinning = true;
+
+            const extraRounds = 5 + Math.floor(Math.random() * 5);
+            const randomSlice = Math.floor(Math.random() * wheelSlices.length);
+            const sliceAngle = (2 * Math.PI) / wheelSlices.length;
+            const targetAngle = currentWheelAngle + (extraRounds * 2 * Math.PI) + ((wheelSlices.length - randomSlice) * sliceAngle) - (currentWheelAngle % (2 * Math.PI));
+
+            const duration = 3500;
+            const startTime = performance.now();
+
+            function animate(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                const currentAngle = currentWheelAngle + (targetAngle - currentWheelAngle) * easeOut;
+
+                drawWheel(currentAngle);
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    currentWheelAngle = currentAngle;
+                    isSpinning = false;
+                    const prize = wheelSlices[randomSlice];
+                    playFanfareSound();
+
+                    if (prize.type === 'coins') addCoins(prize.value, `Gewinn: ${prize.label}!`);
+                    else showToast("HAUPTGEWINN! 🎉", `Du hast gewonnen: ${prize.label}`, 'fa-trophy');
+
+                    if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function renderChefDashboard() {
+            let totalGuests = 0;
+            for (let key in state.chefStats) totalGuests += state.chefStats[key];
+            document.getElementById('statTotalGuests').textContent = totalGuests;
+
+            let maxKey = 'bowser', maxCount = 0;
+            for (let key in state.chefStats) {
+                if (state.chefStats[key] > maxCount) { maxCount = state.chefStats[key]; maxKey = key; }
+            }
+            const dominantPct = Math.round((maxCount / (totalGuests || 1)) * 100);
+            document.getElementById('statDominantChar').textContent = `${MARIO_CHARACTERS[maxKey].name.toUpperCase()} (${dominantPct}%)`;
+
+            const gridEl = document.getElementById('chefCharGrid');
+            gridEl.innerHTML = '';
+
+            for (let key in MARIO_CHARACTERS) {
+                const char = MARIO_CHARACTERS[key];
+                const count = state.chefStats[key] || 0;
+                const pct = Math.round((count / (totalGuests || 1)) * 100);
+
+                gridEl.innerHTML += `
+                    <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-2xl flex flex-col justify-between space-y-2 hover:border-slate-700 transition-all">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xl">${char.icon}</span>
+                                <span class="font-display font-bold text-sm text-white">${char.name}</span>
+                            </div>
+                            <span class="font-pixel text-xs text-mario-yellow bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">${count} Gäste</span>
+                        </div>
+                        <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
+                            <div class="bg-gradient-to-r from-mario-yellow to-mario-red h-full rounded-full" style="width: ${pct}%"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderChefOrders();
+            renderChefFeedback();
+        }
+
+        function filterChefOrders(type) {
+            state.currentOrderFilter = type;
+            ['all', 'A', 'B', 'C'].forEach(t => {
+                const btn = document.getElementById('btnOrderFilter' + (t === 'all' ? 'All' : t));
+                btn.className = t === type ? "flex-1 py-1.5 rounded-lg bg-slate-800 text-white font-bold" : "flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white";
+            });
+            renderChefOrders();
+        }
+
+        function renderChefOrders() {
+            const feedEl = document.getElementById('ordersFeed');
+            feedEl.innerHTML = '';
+            const filteredOrders = state.orders.filter(o => state.currentOrderFilter === 'all' || o.menuCode === state.currentOrderFilter);
+
+            if (filteredOrders.length === 0) {
+                feedEl.innerHTML = `<p class="text-xs text-slate-500 italic text-center py-4">Keine Bestellungen.</p>`;
+                return;
+            }
+
+            filteredOrders.forEach(o => {
+                feedEl.innerHTML += `
+                    <div class="p-3 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between">
+                        <div class="space-y-0.5">
+                            <div class="flex items-center space-x-2">
+                                <span class="font-bold text-white text-xs">${o.room}</span>
+                                <span class="px-2 py-0.5 bg-slate-900 border border-slate-700 text-mario-yellow rounded-lg text-[10px] font-pixel">${o.char}</span>
+                            </div>
+                            <p class="text-xs text-slate-300 font-bold">${o.menu}</p>
+                        </div>
+                        <span class="px-2.5 py-1.5 rounded-xl font-pixel text-[9px] bg-slate-900 text-slate-400 border border-slate-800">${o.status}</span>
+                    </div>
+                `;
+            });
+        }
+
+        function filterChefFeedback(type) {
+            state.currentFeedbackFilter = type;
+            ['all', 5, 'text'].forEach(t => {
+                const btn = document.getElementById('btnFeedbackFilter' + (t === 'all' ? 'All' : (t === 5 ? '5' : 'Text')));
+                btn.className = t === type ? "flex-1 py-1.5 rounded-lg bg-slate-800 text-white font-bold" : "flex-1 py-1.5 rounded-lg text-slate-400 hover:text-white";
+            });
+            renderChefFeedback();
+        }
+
+        function renderChefFeedback() {
+            const feedEl = document.getElementById('feedbackFeed');
+            feedEl.innerHTML = '';
+            let list = state.feedbacks;
+            if (state.currentFeedbackFilter === 5) list = list.filter(f => f.stars === 5);
+            if (state.currentFeedbackFilter === 'text') list = list.filter(f => f.text && f.text.length > 5);
+
+            if (list.length === 0) {
+                feedEl.innerHTML = `<p class="text-xs text-slate-500 italic text-center py-4">Kein Feedback vorhanden.</p>`;
+                return;
+            }
+
+            list.forEach(f => {
+                feedEl.innerHTML += `
+                    <div class="p-3.5 bg-slate-950 border border-slate-800 rounded-2xl space-y-1">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-white text-xs">${f.room} (${f.char})</span>
+                            <span class="text-mario-yellow text-xs">${'★'.repeat(f.stars)}</span>
+                        </div>
+                        <p class="text-xs text-slate-300 italic">"${f.text}"</p>
+                    </div>
+                `;
+            });
+        }
+
+        function openQrModal() {
+            const qrModal = document.getElementById('qrModal');
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '';
+            new QRCode(qrContainer, { text: window.location.href, width: 140, height: 140 });
+            qrModal.classList.remove('hidden');
+            qrModal.classList.add('flex');
+        }
+
+        function closeQrModal() {
+            document.getElementById('qrModal').classList.add('hidden');
+            document.getElementById('qrModal').classList.remove('flex');
+        }
+
+        function resetDemoData() {
+            state.coins = 0;
+            updateCoinsDisplay();
+            showToast("Reset durchgeführt", "Demo-Daten wurden zurückgesetzt.", "fa-rotate-left");
+        }
+
+        window.onload = function() {
+            renderCard();
+            setupCardDrag();
+            renderChefDashboard();
+            updateCoinsDisplay();
+        };
+    </script>
+</body>
+</html>
