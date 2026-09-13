@@ -127,8 +127,9 @@
     <main>
         <section class="relative overflow-hidden noise-ground">
             <div class="absolute inset-0 hairline-grid pointer-events-none"></div>
-            <!-- Angled brand-blue accent, echoing the diagonal banner on the official BEA site -->
-            <div class="diagonal-slice absolute top-0 right-0 w-1/2 sm:w-2/5 h-40 sm:h-48 bg-gradient-to-br from-bea-600 to-bea-900 opacity-[0.94] pointer-events-none"></div>
+            <!-- Angled brand-blue accent, echoing the diagonal banner on the official BEA site.
+                 Hidden below sm: at mobile widths it overlapped the badge and headline text. -->
+            <div class="diagonal-slice hidden sm:block absolute top-0 right-0 w-2/5 h-48 bg-gradient-to-br from-bea-600 to-bea-900 opacity-[0.94] pointer-events-none"></div>
 
             <div class="relative max-w-5xl mx-auto px-6 lg:px-8 pt-20 pb-16 sm:pt-28 sm:pb-20 text-center">
                 <span class="fade-up inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.12em] bg-white text-bea-700 border border-bea-200/70 shadow-sm">
